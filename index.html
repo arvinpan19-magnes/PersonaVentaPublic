@@ -1,0 +1,1485 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Persona Ventas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Barlow+Condensed:wght@500;600;700&display=swap">
+<style>
+/* Layout: menú de juego a pantalla completa sobre un océano nocturno animado; pantallas que entran con un barrido diagonal. Un solo look oscuro, deliberado. */
+:root{
+  --abyss:#020b1f;      /* fondo del océano */
+  --deep:#06306b;       /* agua profunda */
+  --tide:#0a62c9;       /* agua media */
+  --foam:#5fd3ff;       /* acento cian */
+  --ink:#06070b;        /* cajas negras */
+  --paper:#f4f6fb;      /* cajas blancas y texto */
+  --mist:#d6e3f5;       /* texto secundario */
+  --jp:#ff5c86;         /* acento rosado: PC y Japón */
+  --ot:#a3b6d1;         /* gris: otros, sin desglose, cifra incompleta */
+  --ps:#3d9cff;         /* PlayStation (sobremesa) */
+  --ps2:#9fd0ff;        /* PlayStation portátil */
+  --pc:#ff5c86;         /* PC (Steam) */
+  --nin:#ffc61f;        /* Nintendo */
+  --xbox:#36eaa3;       /* Xbox / Microsoft */
+  --remake:#cfb0ff;     /* remake en la línea de tiempo */
+  --f-display:'Archivo Black','Arial Black',Impact,sans-serif;
+  --f-body:'Barlow Condensed','Arial Narrow',Arial,sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%;}
+body{background:var(--abyss);color:var(--paper);font-family:var(--f-body);font-weight:600;overflow:hidden;
+  -webkit-font-smoothing:antialiased;}
+*{box-sizing:border-box;}
+button{font:inherit;color:inherit;}
+.display{font-family:var(--f-display);font-weight:400;}
+
+/* ---------- océano ---------- */
+#sea{position:fixed;inset:0;width:100%;height:100%;z-index:0;display:block;}
+#dots{position:fixed;inset:0;z-index:1;pointer-events:none;
+  background-image:radial-gradient(circle,rgba(0,0,0,.38) 1.4px,transparent 1.6px);background-size:12px 12px;
+  mask-image:linear-gradient(100deg,transparent 30%,#000 75%);-webkit-mask-image:linear-gradient(100deg,transparent 30%,#000 75%);}
+#veil{position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:linear-gradient(100deg,rgba(2,11,31,.92) 0%,rgba(2,11,31,.72) 38%,rgba(2,11,31,.0) 70%);
+  transition:background .7s;}
+body[data-screen]:not([data-screen="home"]) #veil{background:linear-gradient(100deg,rgba(2,11,31,.9) 0%,rgba(2,11,31,.78) 60%,rgba(2,11,31,.45) 100%);}
+
+/* ---------- marco ---------- */
+#shell{position:relative;z-index:2;height:100%;display:flex;flex-direction:column;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));}
+#hud-top{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-block:16px 0;}
+.tag{display:inline-block;background:var(--ink);color:var(--paper);padding:4px 12px;font-size:13px;letter-spacing:.14em;
+  text-transform:uppercase;transform:rotate(-2deg);box-shadow:4px 4px 0 rgba(0,0,0,.4);}
+.tag.w{background:var(--paper);color:var(--ink);transform:rotate(1.5deg);}
+#hud-bottom{display:flex;gap:20px;flex-wrap:wrap;align-items:center;padding-block:10px 14px;font-size:13px;
+  letter-spacing:.16em;text-transform:uppercase;}
+.key{display:inline-block;background:var(--paper);color:var(--ink);padding:1px 8px;margin-right:6px;font-weight:700;transform:skewX(-8deg);}
+#sound{margin-left:auto;background:var(--ink);border:0;padding:4px 12px;letter-spacing:.14em;cursor:pointer;transform:skewX(-8deg);}
+#sound:focus-visible,.menu-item:focus-visible,.back:focus-visible{outline:3px dashed var(--foam);outline-offset:4px;}
+#stage{flex:1;position:relative;min-height:0;}
+
+/* ---------- letras recortadas ---------- */
+.ransom{display:inline-flex;flex-wrap:wrap;align-items:center;line-height:1;}
+#big .ransom,.menu-item .ransom,.head .ransom{flex-wrap:nowrap;}
+.ransom .ch{display:inline-block;font-family:var(--f-display);padding:.02em .08em;margin:0 .02em;color:var(--paper);
+  text-shadow:3px 3px 0 var(--ink);transition:transform .2s;}
+.ransom .ch.box{background:var(--ink);color:var(--paper);text-shadow:none;}
+.ransom .ch.boxw{background:var(--paper);color:var(--ink);text-shadow:none;}
+.ransom .ch.cy{color:var(--foam);}
+.ransom .sp{width:.35em;}
+
+/* ---------- pantallas ---------- */
+.screen{position:absolute;inset:0;display:none;overflow-y:auto;overflow-x:hidden;padding-block:2vh 3vh;
+  scrollbar-width:thin;scrollbar-color:var(--foam) transparent;}
+.screen.active{display:block;}
+#screen-home.active{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:3vw;align-items:center;}
+
+#eyebrow{font-size:clamp(13px,1.4vw,18px);letter-spacing:.45em;text-transform:uppercase;margin:0 0 1.2vh;color:var(--foam);text-shadow:2px 2px 0 var(--ink);}
+#big .ransom{font-size:clamp(40px,min(7.4vw,11vh),118px);}
+#big .sub{font-size:clamp(20px,min(3.2vw,5vh),46px);margin-top:.6vh;}
+#tagline{max-width:34rem;font-size:clamp(15px,min(1.4vw,2.3vh),20px);line-height:1.35;background:var(--ink);padding:10px 16px;
+  transform:rotate(-1deg);box-shadow:6px 6px 0 rgba(0,0,0,.35);margin-top:2vh;font-weight:500;}
+#menu{margin-top:3.2vh;display:flex;flex-direction:column;align-items:flex-start;gap:.3vh;}
+.menu-item{background:none;border:0;cursor:pointer;text-align:left;position:relative;padding:2px 16px 2px 6px;
+  transform:translateX(-50px);opacity:0;animation:menuIn .5s cubic-bezier(.2,1.2,.3,1) forwards;}
+.menu-item .ransom{font-size:clamp(20px,min(2.9vw,4.3vh),40px);}
+.menu-item::before{content:"";position:absolute;left:-3%;top:16%;height:72%;width:0;background:var(--ink);
+  transform:skewX(-16deg);z-index:-1;transition:width .18s cubic-bezier(.7,0,.3,1);}
+.menu-item.sel::before{width:108%;}
+.menu-item.sel{transform:translateX(14px)!important;}
+.menu-item.sel .ch.box{background:var(--foam);color:var(--ink);}
+.menu-item .hint{position:absolute;left:calc(100% + 10px);top:50%;transform:translateY(-50%) rotate(-3deg);white-space:nowrap;
+  background:var(--paper);color:var(--ink);font-size:14px;letter-spacing:.08em;padding:3px 10px;opacity:0;transition:opacity .15s;font-weight:700;}
+.menu-item.sel .hint{opacity:1;}
+@keyframes menuIn{to{transform:translateX(0);opacity:1;}}
+
+/* emblema de la derecha en el inicio */
+#emblem{justify-self:center;position:relative;display:flex;flex-direction:column;align-items:flex-end;gap:10px;padding:18px;}
+#emblem .num{font-family:var(--f-display);font-size:clamp(64px,10vw,150px);line-height:.9;color:transparent;
+  -webkit-text-stroke:2px var(--paper);transform:rotate(-6deg);letter-spacing:-.02em;}
+#emblem .num b{color:var(--paper);-webkit-text-stroke:0;}
+#emblem .cap{background:var(--paper);color:var(--ink);font-family:var(--f-display);font-size:clamp(14px,1.4vw,19px);padding:6px 14px;transform:rotate(-4deg);}
+#emblem .cap2{background:var(--ink);color:var(--paper);font-size:clamp(14px,1.3vw,17px);padding:6px 14px;transform:rotate(2deg);letter-spacing:.06em;max-width:24rem;text-align:right;}
+
+/* encabezado de pantallas internas */
+.head{display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin-bottom:2.4vh;}
+.head .ransom{font-size:clamp(38px,6vw,84px);}
+.back{background:var(--paper);color:var(--ink);border:0;padding:4px 12px;transform:rotate(-2deg);cursor:pointer;font-weight:700;letter-spacing:.1em;}
+.lead{font-family:var(--f-display);font-size:clamp(20px,2.4vw,32px);line-height:1.15;max-width:44rem;text-wrap:balance;margin:0 0 2.4vh;text-shadow:3px 3px 0 var(--ink);}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:26px 34px;align-items:start;}
+.panel{background:var(--ink);padding:22px 24px 24px;box-shadow:10px 10px 0 rgba(0,0,0,.45);transform:rotate(-.6deg);min-width:0;}
+.panel.r{transform:rotate(.7deg);}
+.label{display:inline-block;font-family:var(--f-display);font-size:clamp(15px,1.4vw,19px);background:var(--paper);color:var(--ink);
+  padding:4px 12px;transform:rotate(-2deg);margin:0 0 14px -6px;}
+.label.cy{background:var(--foam);}
+.list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px;font-size:clamp(17px,1.5vw,20px);line-height:1.3;font-weight:500;}
+.list li{position:relative;padding-left:26px;}
+.list li::before{content:"";position:absolute;left:0;top:.42em;width:14px;height:9px;background:var(--foam);transform:skewX(-24deg);}
+.list b{font-weight:700;color:var(--paper);}
+.muted{color:var(--mist);font-weight:500;}
+
+/* tabla de datos */
+.kv{display:grid;grid-template-columns:auto 1fr;gap:8px 18px;font-size:clamp(16px,1.4vw,19px);font-weight:500;}
+.kv dt{color:var(--foam);text-transform:uppercase;letter-spacing:.08em;font-weight:700;font-size:.85em;padding-top:2px;}
+.kv dd{margin:0;min-width:0;overflow-wrap:anywhere;}
+.chips{display:flex;flex-wrap:wrap;gap:8px;}
+.chip{background:var(--paper);color:var(--ink);padding:4px 10px;font-weight:700;font-size:15px;transform:skewX(-8deg);}
+.chip.d{background:transparent;color:var(--paper);outline:2px solid var(--paper);}
+.chip small{font-weight:500;}
+
+/* barras tipo "skills" */
+.bars{display:flex;flex-direction:column;gap:9px;}
+.bar{display:grid;grid-template-columns:minmax(0,15rem) minmax(0,1fr) 3.6rem;gap:12px;align-items:center;font-size:clamp(14px,1.25vw,16px);
+  letter-spacing:.04em;text-transform:uppercase;font-weight:700;}
+.bar .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.track{height:16px;background:rgba(244,246,251,.22);transform:skewX(-24deg);position:relative;overflow:hidden;display:flex;}
+.fill{height:100%;width:0;background:var(--paper);transition:width .7s cubic-bezier(.2,.9,.2,1);}
+.seg{height:100%;width:0;transition:width .7s cubic-bezier(.2,.9,.2,1);}
+.val{font-family:var(--f-display);font-size:clamp(14px,1.3vw,17px);text-align:right;font-variant-numeric:tabular-nums;}
+.bar.hl .nm{color:var(--foam);}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:4px 0 14px;font-size:14px;letter-spacing:.08em;text-transform:uppercase;}
+.legend span{display:inline-flex;align-items:center;gap:6px;}
+.legend i{display:inline-block;width:16px;height:10px;transform:skewX(-24deg);}
+.tabs{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;}
+.tab{background:transparent;border:2px solid var(--paper);padding:4px 12px;cursor:pointer;letter-spacing:.08em;font-weight:700;transform:skewX(-8deg);text-transform:uppercase;}
+.tab[aria-selected="true"]{background:var(--paper);color:var(--ink);}
+.tab:focus-visible{outline:3px dashed var(--foam);outline-offset:3px;}
+#tip{min-height:1.4em;margin-top:12px;font-size:15px;color:var(--mist);font-weight:500;}
+
+/* hallazgos */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:28px;}
+.card{padding:22px 24px 26px;box-shadow:10px 10px 0 rgba(0,0,0,.5);}
+.card:nth-child(1){background:var(--paper);color:var(--ink);transform:rotate(-2deg);}
+.card:nth-child(2){background:var(--ink);color:var(--paper);transform:rotate(1.4deg);}
+.card:nth-child(3){background:var(--paper);color:var(--ink);transform:rotate(-1.2deg);}
+.card .big{font-family:var(--f-display);font-size:clamp(52px,6vw,84px);line-height:1;color:var(--tide);}
+.card:nth-child(2) .big{color:var(--foam);}
+.card h3{font-family:var(--f-display);font-weight:400;font-size:clamp(16px,1.5vw,20px);margin:10px 0 12px;text-transform:uppercase;line-height:1.15;}
+.card p{margin:0;font-size:clamp(17px,1.5vw,20px);line-height:1.3;font-weight:500;}
+.card .links{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;}
+.goto{border:0;cursor:pointer;font:inherit;font-weight:700;font-size:13px;letter-spacing:.06em;text-transform:uppercase;padding:4px 10px;transform:skewX(-8deg);
+  background:var(--ink);color:var(--paper);transition:transform .15s, background .15s;}
+.goto:hover{transform:skewX(-8deg) translateY(-2px);background:var(--tide);}
+.goto:focus-visible{outline:3px dashed var(--tide);outline-offset:3px;}
+.card:nth-child(2) .goto{background:var(--foam);color:var(--ink);}
+.card:nth-child(2) .goto:hover{background:var(--paper);}
+.card .links small{flex-basis:100%;font-size:12px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;opacity:.7;}
+.card .q{display:inline-block;font-size:13px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;padding:2px 8px;margin-bottom:10px;
+  background:var(--ink);color:var(--paper);}
+.card:nth-child(2) .q{background:var(--foam);color:var(--ink);}
+
+/* barrido diagonal */
+#wipe{position:fixed;inset:0;z-index:50;pointer-events:none;display:flex;transform:translateX(-130%) skewX(-18deg);}
+#wipe div{flex:1;}
+#wipe .a{background:var(--foam);} #wipe .b{background:var(--ink);flex:2;} #wipe .c{background:var(--paper);flex:.5;}
+#wipe.go{animation:wipe .72s cubic-bezier(.75,0,.25,1);}
+@keyframes wipe{0%{transform:translateX(-130%) skewX(-18deg);}45%,55%{transform:translateX(-10%) skewX(-18deg);}100%{transform:translateX(130%) skewX(-18deg);}}
+
+@media (max-width:820px){
+  body{overflow:auto;}
+  #screen-home.active{grid-template-columns:1fr;}
+  #emblem{justify-self:start;align-items:flex-start;}
+  #emblem .cap2{text-align:left;}
+  .menu-item .hint{display:none;}
+  .bar{grid-template-columns:minmax(0,7.5rem) minmax(0,1fr) 3.2rem;}
+  #hud-bottom .k{display:none;}
+}
+/* ---------- interfaz de pestañas y fuentes ---------- */
+.src{margin-top:14px;font-size:15px;font-weight:500;}
+.src summary{cursor:pointer;display:inline-block;background:var(--ink);outline:2px solid var(--mist);padding:3px 10px;letter-spacing:.1em;
+  text-transform:uppercase;font-weight:700;font-size:13px;transform:skewX(-8deg);list-style:none;}
+.src summary::-webkit-details-marker{display:none;}
+.src summary:focus-visible{outline:3px dashed var(--foam);}
+.src ul{margin:10px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:4px;color:var(--mist);}
+.src a{color:var(--foam);}
+.era{display:inline-block;font-size:13px;letter-spacing:.14em;text-transform:uppercase;background:var(--foam);color:var(--ink);padding:2px 10px;font-weight:700;transform:rotate(-2deg);}
+.pane[hidden],.cpane[hidden]{display:none!important;}
+#dchart .bar{grid-template-columns:minmax(0,18rem) minmax(0,1fr) 4.6rem;}
+@media (max-width:820px){#dchart .bar{grid-template-columns:minmax(0,8.5rem) minmax(0,1fr) 3.6rem;}}
+
+/* ---------- gráficos nuevos (vista previa) ---------- */
+.viz{width:100%;display:block;overflow:visible;}
+.viz text{font-family:var(--f-body);font-weight:700;fill:var(--mist);font-size:13px;letter-spacing:.06em;}
+.viz .num{font-family:var(--f-display);fill:var(--paper);font-size:15px;letter-spacing:0;}
+.viz .num.hl{fill:var(--foam);font-size:19px;}
+.viz .grid{stroke:rgba(244,246,251,.2);stroke-width:1;}
+.viz .axis{stroke:rgba(244,246,251,.35);stroke-width:1.5;}
+.viz .vtag rect{fill:var(--paper);} .viz .vtag text{fill:var(--ink);font-size:12px;letter-spacing:.04em;}
+.viz .ev{stroke:var(--paper);stroke-width:1.5;stroke-dasharray:3 4;opacity:.6;}
+.viz .line{fill:none;stroke:var(--foam);stroke-width:3.5;stroke-linejoin:round;}
+.viz .draw{stroke-dasharray:var(--len);stroke-dashoffset:var(--len);animation:draw 1.2s cubic-bezier(.4,0,.2,1) .15s forwards;}
+@keyframes draw{to{stroke-dashoffset:0;}}
+.viz .pop{transform-box:fill-box;transform-origin:center;animation:pop .45s cubic-bezier(.3,1.6,.5,1) both;}
+@keyframes pop{from{transform:scale(0) rotate(45deg);}to{transform:scale(1) rotate(45deg);}}
+.viz .dot-o{fill:var(--paper);opacity:.4;}
+.viz .dot-m{fill:var(--ot);opacity:.9;}
+.viz .dot-p{fill:var(--foam);stroke:var(--ink);stroke-width:2;}
+.viz .med{stroke:var(--paper);stroke-width:3;}
+.viz .lead{stroke:var(--paper);stroke-width:1;opacity:.7;}
+.stack{display:flex;flex-direction:column;gap:22px;margin-top:6px;}
+.stack .row{display:grid;grid-template-columns:minmax(0,9rem) minmax(0,1fr);gap:14px;align-items:center;}
+.stack .who{font-family:var(--f-display);font-size:clamp(15px,1.4vw,19px);line-height:1.1;}
+.stack .who small{display:block;font-family:var(--f-body);font-weight:700;font-size:13px;color:var(--mist);letter-spacing:.08em;}
+.stack .bar100{display:flex;gap:3px;height:46px;transform:skewX(-14deg);}
+.stack .sg{height:100%;width:0;display:flex;align-items:center;justify-content:center;overflow:hidden;transition:width .8s cubic-bezier(.2,.9,.2,1);}
+.stack .sg span{transform:skewX(14deg);font-family:var(--f-display);font-size:clamp(12px,1.1vw,15px);color:var(--ink);white-space:nowrap;}
+.stack .brace{grid-column:2;position:relative;height:30px;margin-bottom:-14px;}
+.stack .brace div{position:absolute;bottom:0;height:12px;border:2px solid var(--foam);border-bottom:0;}
+.stack .sg.rango{background:repeating-linear-gradient(135deg,#ff5c86 0 5px,rgba(255,92,134,.5) 5px 10px)!important;}
+.stack .sg.nd{background:repeating-linear-gradient(135deg,#3a4458 0 6px,#2a3242 6px 12px)!important;}
+.stack .sg.nd span{color:var(--paper);font-family:var(--f-body);font-weight:700;letter-spacing:.06em;}
+.stack .ref .who{color:var(--mist);}
+.stack .row.ref .bar100{height:30px;}
+.legend a{color:var(--foam);}
+.stack .brace b{position:absolute;bottom:16px;background:var(--foam);color:var(--ink);font-family:var(--f-display);font-weight:400;font-size:14px;padding:2px 10px;transform:rotate(-2deg);white-space:nowrap;}
+body.still .viz .draw{animation:none;stroke-dashoffset:0;} body.still .viz .pop{animation:none;}
+/* ---------- CONTEXTO ---------- */
+[hidden]{display:none!important;}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:18px;margin-bottom:22px;}
+.fact{background:var(--paper);color:var(--ink);padding:14px 16px 16px;box-shadow:7px 7px 0 rgba(0,0,0,.45);}
+.fact:nth-child(even){transform:rotate(1deg);} .fact:nth-child(odd){transform:rotate(-1deg);}
+.fact b{display:block;font-family:var(--f-display);font-weight:400;font-size:clamp(26px,2.6vw,36px);line-height:1;color:var(--tide);}
+.fact span{display:block;margin-top:6px;font-size:16px;line-height:1.25;font-weight:600;}
+.prose{font-size:clamp(17px,1.5vw,20px);line-height:1.4;font-weight:500;max-width:62rem;margin:0 0 12px;}
+.prose b{font-weight:700;color:var(--foam);}
+.tl{position:relative;height:330px;margin:10px 6px 0;}
+.tl .axisline{position:absolute;left:0;right:0;top:165px;height:4px;background:var(--paper);}
+.tl .era{position:absolute;top:150px;height:34px;border:2px dashed rgba(244,246,251,.35);border-radius:2px;background:none;transform:none;padding:0;}
+.tl .era span{position:absolute;top:-22px;left:6px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--mist);font-weight:700;white-space:nowrap;}
+.tl .yr{position:absolute;top:174px;transform:translateX(-50%);font-family:var(--f-display);font-size:12px;color:var(--mist);}
+.tl .ev{position:absolute;transform:translateX(-50%);width:0;}
+.tl .ev i{position:absolute;left:-8px;top:157px;width:16px;height:16px;transform:rotate(45deg);border:2px solid var(--ink);}
+.tl .ev .stem{position:absolute;left:-1px;width:2px;background:rgba(244,246,251,.5);}
+.tl .ev .card{position:absolute;left:-60px;width:120px;padding:5px 7px;font-size:12.5px;line-height:1.15;font-weight:700;text-align:center;}
+.tl .ev .card small{display:block;font-weight:600;font-size:11px;opacity:.85;}
+.tl .orig i,.tl .orig .card{background:var(--paper);color:var(--ink);}
+.tl .ampl i,.tl .ampl .card{background:var(--foam);color:var(--ink);}
+.tl .rem i,.tl .rem .card{background:var(--remake);color:var(--ink);}
+.tl .next .card{outline:2px dashed var(--remake);background:var(--ink);color:var(--paper);} .tl .next i{background:var(--ink);border-color:var(--remake);}
+.tlist{display:none;list-style:none;margin:0;padding:0;flex-direction:column;gap:8px;}
+.tlist li{display:grid;grid-template-columns:3.2rem 1fr;gap:10px;align-items:start;font-size:16px;font-weight:600;}
+.tlist li b{font-family:var(--f-display);font-weight:400;color:var(--foam);}
+@media (max-width:820px){.tl{display:none;}.tlist{display:flex;}}
+.gloss{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));gap:12px 18px;}
+.gloss div{border-left:4px solid var(--foam);padding:4px 0 4px 12px;}
+.gloss dt{font-family:var(--f-display);font-size:17px;}
+.gloss dd{margin:3px 0 0;font-size:16px;line-height:1.3;font-weight:500;color:var(--paper);}
+.gloss dd em{font-style:normal;color:var(--mist);}
+.srcs{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:18px;}
+.srcs .s{background:rgba(244,246,251,.06);padding:14px 16px;border-top:4px solid var(--foam);}
+.srcs .s.vg{border-color:var(--paper);} .srcs .s.st{border-color:#ff5c86;} .srcs .s.mk{border-color:var(--ot);}
+.srcs h4{margin:0 0 6px;font-family:var(--f-display);font-weight:400;font-size:17px;}
+.srcs p{margin:0;font-size:15.5px;line-height:1.3;font-weight:500;}
+.srcs p+p{margin-top:6px;color:var(--mist);}
+.why{margin-top:18px;background:var(--paper);color:var(--ink);padding:14px 18px;transform:rotate(-.4deg);box-shadow:7px 7px 0 rgba(0,0,0,.45);font-size:17px;line-height:1.35;font-weight:600;}
+.why b{font-weight:800;color:var(--tide);}
+/* ---------- encabezado y lectura de gráficos ---------- */
+.chead{margin:0 0 10px;}
+.chead h3{margin:0 0 8px;font-family:var(--f-display);font-weight:400;font-size:clamp(20px,2vw,27px);line-height:1.12;text-wrap:balance;}
+.chead .meta{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14.5px;font-weight:600;color:var(--mist);}
+.muted{color:var(--mist)!important;}
+.chead .meta b{color:var(--paper);font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-size:12px;margin-right:4px;}
+.how{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:12px 22px;margin-top:14px;}
+.how div{background:rgba(244,246,251,.07);padding:10px 14px;font-size:16px;line-height:1.35;font-weight:500;}
+.how b{display:block;font-family:var(--f-display);font-weight:400;font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:var(--foam);margin-bottom:3px;}
+.xaxis{display:grid;grid-template-columns:minmax(0,15rem) minmax(0,1fr) 3.6rem;gap:12px;margin-top:4px;}
+.xaxis .ticks{position:relative;height:20px;border-top:1.5px solid rgba(244,246,251,.4);}
+.xaxis .ticks span{position:absolute;top:3px;transform:translateX(-50%);font-family:var(--f-display);font-size:12px;color:var(--mist);}
+.xaxis .ttl{grid-column:2;text-align:center;font-size:13px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--mist);margin-top:2px;}
+@media (max-width:820px){.xaxis{grid-template-columns:minmax(0,7.5rem) minmax(0,1fr) 3.2rem;}}
+/* ---------- columna PlayStation y eje de % ---------- */
+.stack .row.ps{grid-template-columns:minmax(0,9rem) minmax(0,1fr) 7.5rem;}
+.stack .psv{font-family:var(--f-display);font-size:clamp(14px,1.3vw,18px);text-align:right;color:var(--ps);line-height:1.05;}
+.stack .psv small{display:block;font-family:var(--f-body);font-size:12px;font-weight:700;color:var(--mist);letter-spacing:.06em;}
+.stack .psh{grid-column:3;text-align:right;font-size:12px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:var(--ps);border-bottom:2px solid var(--ps);padding-bottom:2px;}
+.stack .sg.mix{background:repeating-linear-gradient(135deg,#8b98b2 0 6px,#64708a 6px 12px)!important;}
+.stack .sg.mix span{color:var(--ink);}
+.pctaxis{display:grid;grid-template-columns:minmax(0,9rem) minmax(0,1fr) 7.5rem;gap:14px;margin-top:8px;}
+.pctaxis .ticks{position:relative;height:20px;border-top:1.5px solid rgba(244,246,251,.4);}
+.pctaxis .ticks span{position:absolute;top:3px;transform:translateX(-50%);font-family:var(--f-display);font-size:12px;color:var(--mist);}
+.pctaxis .ttl{grid-column:2;text-align:center;font-size:13px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--mist);margin-top:2px;}
+@media (max-width:820px){.stack .row.ps,.pctaxis{grid-template-columns:minmax(0,6.5rem) minmax(0,1fr) 4.6rem;}}
+/* ---------- pestañas agrupadas por pregunta ---------- */
+.tabgroups{display:flex;flex-wrap:wrap;gap:12px 28px;margin-bottom:16px;}
+.tg{display:flex;flex-direction:column;gap:6px;min-width:0;}
+.tgl{font-size:12px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--foam);}
+.tg .tabs{margin:0;}
+/* ---------- barra inferior compacta en pantallas medianas ---------- */
+@media (max-width:1500px){#hud-bottom{gap:12px;font-size:12px;letter-spacing:.08em;} #hud-bottom button{letter-spacing:.06em;padding:4px 9px;} #hud-bottom .key{padding:1px 6px;margin-right:4px;}}
+/* ---------- explicaciones ocultables ---------- */
+body.sin-exp .how{display:none;}
+#expl{background:var(--ink);border:0;padding:4px 12px;letter-spacing:.14em;cursor:pointer;transform:skewX(-8deg);}
+#expl[aria-pressed="false"]{background:var(--foam);color:var(--ink);}
+#expl:focus-visible{outline:3px dashed var(--foam);outline-offset:4px;}
+/* ---------- portada: adelanto de hallazgos ---------- */
+#emblem .teaser{display:flex;flex-direction:column;gap:8px;margin-top:6px;align-items:flex-end;}
+#emblem .teaser button{display:flex;align-items:baseline;gap:10px;background:rgba(6,7,11,.85);border:0;border-left:4px solid var(--foam);padding:6px 12px;cursor:pointer;
+  color:var(--paper);font-weight:600;font-size:clamp(13px,1.2vw,16px);text-align:left;transition:transform .15s;}
+#emblem .teaser button:hover{transform:translateX(-6px);}
+#emblem .teaser button:focus-visible{outline:3px dashed var(--foam);outline-offset:3px;}
+#emblem .teaser b{font-family:var(--f-display);font-weight:400;color:var(--foam);font-size:clamp(17px,1.6vw,22px);min-width:4.6em;text-align:right;}
+#emblem .teaser small{display:block;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--mist);margin-bottom:2px;}
+/* ---------- celular: pestañas en una fila que se desliza ---------- */
+@media (max-width:820px){
+  .tabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding:2px 2px 6px;}
+  .tabs::-webkit-scrollbar{display:none;}
+  .tabs .tab{flex:none;}
+  .tabgroups{flex-direction:column;gap:10px;}
+  #emblem .teaser{align-items:flex-start;}
+  #proj{display:none;}   /* la letra grande solo sirve al proyectar */
+}
+/* ---------- vida extra ---------- */
+.ransom .ch{transform:var(--t);animation:bob 3.4s ease-in-out infinite;animation-delay:var(--d);}
+@keyframes bob{0%,100%{transform:var(--t);}50%{transform:var(--t) translateY(-5px) rotate(2deg);}}
+.menu-item.sel .ch{animation:jump .42s cubic-bezier(.3,1.6,.5,1) both;animation-delay:calc(var(--i) * 28ms);}
+@keyframes jump{0%{transform:var(--t);}45%{transform:var(--t) translateY(-12px) scale(1.12);}100%{transform:var(--t);}}
+.menu-item::after{content:"";position:absolute;left:-22px;top:50%;width:16px;height:18px;background:var(--foam);
+  clip-path:polygon(0 0,100% 50%,0 100%);transform:translateY(-50%);opacity:0;}
+.menu-item.sel::after{opacity:1;animation:poke .6s ease-in-out infinite alternate;}
+@keyframes poke{from{transform:translate(-6px,-50%);}to{transform:translate(2px,-50%);}}
+.menu-item.sel::before{animation:flash .5s ease-out;}
+@keyframes flash{0%{background:var(--foam);}100%{background:var(--ink);}}
+.tag{animation:sway 5s ease-in-out infinite;}
+.tag.w{animation-delay:-2.5s;}
+@keyframes sway{0%,100%{rotate:0deg;}50%{rotate:1.5deg;}}
+#emblem{animation:float 6s ease-in-out infinite;}
+@keyframes float{0%,100%{transform:translateY(0) rotate(0);}50%{transform:translateY(-14px) rotate(-1deg);}}
+#emblem .num b{background:linear-gradient(100deg,var(--paper) 40%,var(--foam) 50%,var(--paper) 60%);background-size:300% 100%;
+  -webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 3.2s linear infinite;}
+@keyframes shine{from{background-position:100% 0;}to{background-position:-200% 0;}}
+#emblem .cap{animation:pulse 2.4s ease-in-out infinite;}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(95,211,255,.0);}50%{box-shadow:0 0 0 8px rgba(95,211,255,.35);}}
+/* entrada de cada pantalla */
+.screen.active > *, .screen.active .grid > *, .screen.active .cards > *{animation:enter .55s cubic-bezier(.2,1.1,.3,1) both;}
+.screen.active > :nth-child(2){animation-delay:.08s;} .screen.active > :nth-child(3){animation-delay:.16s;}
+.screen.active .grid > :nth-child(2), .screen.active .cards > :nth-child(2){animation-delay:.22s;}
+.screen.active .cards > :nth-child(3){animation-delay:.34s;}
+@keyframes enter{from{opacity:0;translate:80px 0;scale:.94;}to{opacity:1;translate:0 0;scale:1;}}
+#screen-home.active > *{animation:none;}
+.panel,.card{transition:transform .25s, box-shadow .25s;}
+.panel:hover{box-shadow:14px 14px 0 rgba(0,0,0,.5);}
+.card:hover{transform:rotate(0deg) translateY(-6px) scale(1.02)!important;}
+.card .big{animation:count .9s cubic-bezier(.2,1.4,.3,1) both;animation-delay:.35s;}
+@keyframes count{from{opacity:0;transform:scale(.4) rotate(-12deg);}to{opacity:1;transform:none;}}
+/* barrido con más bandas */
+#wipe{transform:translateX(-140%) skewX(-18deg);}
+#wipe .d{background:var(--tide);flex:.6;}
+#wipe.go{animation:wipe .8s cubic-bezier(.75,0,.25,1);}
+@keyframes wipe{0%{transform:translateX(-140%) skewX(-18deg);}45%,55%{transform:translateX(-12%) skewX(-18deg);}100%{transform:translateX(140%) skewX(-18deg);}}
+#proj{background:var(--ink);border:0;padding:4px 12px;letter-spacing:.14em;cursor:pointer;transform:skewX(-8deg);}
+#proj[aria-pressed="true"]{background:var(--foam);color:var(--ink);}
+#proj .key,#expl .key{display:inline-block;background:var(--paper);color:var(--ink);padding:0 6px;margin-right:6px;font-weight:700;}
+#proj:focus-visible{outline:3px dashed var(--foam);outline-offset:4px;}
+/* Modo proyector: agranda todo el contenido de las pantallas */
+body.proyector .screen > *{zoom:1.22;}
+body.proyector{--mist:#eef4fc;}
+body.proyector .viz .dot-o{opacity:.55;}
+body.proyector #veil{opacity:.75;}
+.list .links{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.panel .goto{background:var(--foam);color:var(--ink);font-size:12px;}
+.panel .goto:hover{background:var(--paper);}
+#motion{background:var(--ink);border:0;padding:4px 12px;letter-spacing:.14em;cursor:pointer;transform:skewX(-8deg);}
+#motion:focus-visible{outline:3px dashed var(--foam);outline-offset:4px;}
+body.still *{animation:none!important;}
+body.still .fill,body.still .seg{transition:none;}
+
+</style>
+<style>
+/* ---------- reproductor de música (YouTube oficial), barra compacta ---------- */
+#music{position:fixed;z-index:20;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(46px + env(safe-area-inset-bottom,0px));}
+#music .card{background:rgba(6,7,11,.92);padding:6px 8px;box-shadow:5px 5px 0 rgba(0,0,0,.45);transform:skewX(-6deg);
+  display:flex;align-items:center;gap:8px;}
+#music .card > *{transform:skewX(6deg);}
+#yt-wrap{width:80px;height:45px;background:#000;flex:none;}
+#yt-wrap iframe{width:80px;height:45px;display:block;border:0;}
+#music .info{display:flex;flex-direction:column;gap:4px;min-width:0;}
+#music .now{display:flex;align-items:center;gap:6px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;white-space:nowrap;}
+#music .now b{color:var(--foam);font-weight:700;}
+#music .eq{display:inline-flex;gap:2px;align-items:flex-end;height:11px;}
+#music .eq i{width:2px;background:var(--foam);height:3px;}
+#music.playing .eq i{animation:eq .8s ease-in-out infinite;}
+#music.playing .eq i:nth-child(2){animation-delay:-.3s;} #music.playing .eq i:nth-child(3){animation-delay:-.55s;}
+@keyframes eq{0%,100%{height:3px;}50%{height:11px;}}
+#music .row{display:flex;gap:6px;align-items:center;}
+#music button{white-space:nowrap;background:var(--paper);color:var(--ink);border:0;padding:2px 8px;font-weight:700;font-size:12px;letter-spacing:.06em;cursor:pointer;}
+#music button:focus-visible,#vol:focus-visible{outline:2px dashed var(--foam);outline-offset:2px;}
+#vol{width:70px;accent-color:var(--foam);height:12px;}
+#music .msg{position:absolute;right:0;bottom:calc(100% + 6px);font-size:12px;color:var(--paper);background:var(--ink);padding:4px 8px;white-space:nowrap;font-weight:500;}
+#music .msg a{color:var(--foam);}
+#music .now b{display:inline-block;max-width:150px;overflow:hidden;text-overflow:ellipsis;vertical-align:bottom;}
+#music .n{color:var(--mist);font-weight:600;letter-spacing:.04em;}
+#music button.sk{padding:2px 6px;}
+#music.min #yt-wrap{width:1px;height:1px;overflow:hidden;opacity:.01;}
+#music.min .info .now span:last-child,#music.min #vol{display:none;}
+</style>
+<style>html,body{margin:0;}</style>
+</head>
+<body>
+
+
+<canvas id="sea" aria-hidden="true"></canvas>
+<div id="dots" aria-hidden="true"></div>
+<div id="veil" aria-hidden="true"></div>
+<div id="wipe" aria-hidden="true"><div class="d"></div><div class="a"></div><div class="b"></div><div class="c"></div><div class="a"></div></div>
+
+<div id="shell">
+  <header id="hud-top">
+    <span class="tag">Proyecto grupal // Análisis de datos</span>
+    <span class="tag w">VGChartz · Atlus · Famitsu · Steam · 1995–2026</span>
+  </header>
+
+  <main id="stage">
+    <!-- INICIO -->
+    <section class="screen active" id="screen-home" aria-label="Inicio">
+      <div>
+        <p id="eyebrow">Saga Persona · plataformas y versiones</p>
+        <div id="big">
+          <span class="ransom" data-ransom="PERSONA"></span><br>
+          <span class="ransom sub" data-ransom="¿CÓMO LANZAR?"></span>
+        </div>
+        <p id="tagline">¿En qué plataformas, formatos y tipo de versión debería Atlus lanzar el próximo juego de Persona?</p>
+        <nav id="menu" aria-label="Secciones">
+          <button class="menu-item" data-target="contexto" style="animation-delay:.05s"><span class="ransom" data-ransom="CONTEXTO"></span><span class="hint">¿Qué es Persona?</span></button>
+          <button class="menu-item" data-target="pregunta" style="animation-delay:.10s"><span class="ransom" data-ransom="PREGUNTA"></span><span class="hint">El problema</span></button>
+          <button class="menu-item" data-target="datos" style="animation-delay:.17s"><span class="ransom" data-ransom="DATOS"></span><span class="hint">Fuente y variables</span></button>
+          <button class="menu-item" data-target="limpieza" style="animation-delay:.24s"><span class="ransom" data-ransom="LIMPIEZA"></span><span class="hint">Calidad de datos</span></button>
+          <button class="menu-item" data-target="hallazgos" style="animation-delay:.31s"><span class="ransom" data-ransom="HALLAZGOS"></span><span class="hint">Tres resultados</span></button>
+          <button class="menu-item" data-target="stats" style="animation-delay:.38s"><span class="ransom" data-ransom="STATS"></span><span class="hint">Ranking de la saga</span></button>
+          <button class="menu-item" data-target="digital" style="animation-delay:.45s"><span class="ransom" data-ransom="DIGITAL"></span><span class="hint">Ventas 2017–2026</span></button>
+          <button class="menu-item" data-target="plan" style="animation-delay:.52s"><span class="ransom" data-ransom="PLAN"></span><span class="hint">Recomendación</span></button>
+        </nav>
+      </div>
+      <aside id="emblem" aria-label="Resumen">
+        <div class="num"><b>30</b> M+</div>
+        <div class="cap">unidades de la saga Persona a junio de 2026</div>
+        <div class="cap2">Toda la saga con spin-offs, físico + digital (Atlus). Las subseries 3, 4 y 5 suman 23,7 M; el resto son otros juegos de la saga</div>
+        <div class="teaser" aria-label="Adelanto de los hallazgos">
+          <button data-hallazgos><b>2×</b><span><small>Pregunta 1 · ventas</small>un Persona vende el doble que un RPG típico</span></button>
+          <button data-hallazgos><b>40–57%</b><span><small>Pregunta 2 · plataformas</small>de Persona 3 Reload se vende en PC</span></button>
+          <button data-hallazgos><b>3,3×</b><span><small>Pregunta 3 · versiones</small>Royal frente a Persona 5</span></button>
+        </div>
+      </aside>
+    </section>
+
+    <!-- CONTEXTO -->
+    <section class="screen" id="screen-contexto" aria-label="Contexto">
+      <div class="head"><span class="ransom" data-ransom="CONTEXTO"></span><span class="era">Antes de las preguntas</span><button class="back" data-back>ESC · VOLVER</button></div>
+      <div class="tabs" role="tablist" aria-label="Contexto">
+        <button class="tab" role="tab" aria-selected="true" data-ctx="c1">Qué es Persona</button>
+        <button class="tab" role="tab" aria-selected="false" data-ctx="c2">Línea de tiempo</button>
+        <button class="tab" role="tab" aria-selected="false" data-ctx="c3">Glosario</button>
+        <button class="tab" role="tab" aria-selected="false" data-ctx="c4">Fuentes de datos</button>
+      </div>
+      <div class="cpane" id="c1">
+        <p class="lead">Persona es una saga de videojuegos de rol japoneses, creada por Atlus en 1996. Desde 2013 Atlus pertenece a Sega.</p>
+        <div class="facts">
+          <div class="fact"><b>30 M+</b><span>copias vendidas por toda la saga a junio de 2026</span></div>
+          <div class="fact"><b>7,25 M+</b><span>Persona 5 Royal, el juego más vendido</span></div>
+          <div class="fact"><b>12</b><span>juegos principales y versiones entre 1996 y 2027 (sin contar spin-offs)</span></div>
+          <div class="fact"><b>18 feb 2027</b><span>sale Persona 4 Revival, el próximo juego de la saga</span></div>
+        </div>
+        <div class="grid">
+          <div class="panel"><span class="label">Cómo se juega</span>
+            <p class="prose">El jugador es un estudiante que vive un año escolar día a día: va a clases, hace amigos y, de noche, combate en mazmorras con poderes llamados <b>Personas</b>. Mezcla combate por turnos con vida cotidiana.</p></div>
+          <div class="panel r"><span class="label cy">Por qué importa para el negocio</span>
+            <p class="prose">Hasta 2016 un Persona típico vendía <b>0,36 M</b> de copias físicas. Desde 2019 los mayores éxitos superan los <b>3 M</b>. La pregunta es cómo lanzar el próximo juego para repetir ese salto: en qué plataformas, en qué formato y si conviene una versión ampliada.</p></div>
+        </div>
+      </div>
+      <div class="cpane" id="c2" hidden>
+        <p class="prose">Los juegos principales y sus versiones posteriores. Cada juego principal suele relanzarse años después en una <b>versión ampliada</b> o rehecha.</p>
+        <div class="legend"><span><i style="background:var(--paper)"></i>Juego original</span><span><i style="background:var(--foam)"></i>Versión ampliada</span><span><i style="background:var(--remake)"></i>Remake (rehecho desde cero)</span><span class="muted">No se muestran los spin-offs (pelea, baile, mazmorras)</span></div>
+        <div class="tl" aria-hidden="true"><div class="axisline"></div><div class="era" style="left:1.47%;width:64.41%"><span>Base VGChartz · solo físico · hasta 2016</span></div><div class="era" style="left:66.47%;width:27.94%"><span>Cifras oficiales · físico + digital</span></div><span class="yr" style="left:4.41%">1996</span><span class="yr" style="left:16.18%">2000</span><span class="yr" style="left:27.94%">2004</span><span class="yr" style="left:39.71%">2008</span><span class="yr" style="left:51.47%">2012</span><span class="yr" style="left:63.24%">2016</span><span class="yr" style="left:75.00%">2020</span><span class="yr" style="left:86.76%">2024</span><span class="yr" style="left:98.53%">2028</span><div class="ev orig" style="left:4.41%"><span class="stem" style="top:114px;height:43px"></span><i></i><div class="card" style="top:70px">Persona<small>1996 · PlayStation</small></div></div><div class="ev orig" style="left:13.24%"><span class="stem" style="top:173px;height:37px"></span><i></i><div class="card" style="top:210px">Persona 2: Innocent Sin<small>1999 · PlayStation</small></div></div><div class="ev orig" style="left:16.18%"><span class="stem" style="top:52px;height:105px"></span><i></i><div class="card" style="top:8px">Persona 2: Eternal Punishment<small>2000 · PlayStation</small></div></div><div class="ev orig" style="left:33.82%"><span class="stem" style="top:114px;height:43px"></span><i></i><div class="card" style="top:70px">Persona 3<small>2006 · PS2</small></div></div><div class="ev ampl" style="left:36.76%"><span class="stem" style="top:173px;height:37px"></span><i></i><div class="card" style="top:210px">Persona 3 FES<small>2007 · PS2 · versión ampliada</small></div></div><div class="ev orig" style="left:39.71%"><span class="stem" style="top:52px;height:105px"></span><i></i><div class="card" style="top:8px">Persona 4<small>2008 · PS2</small></div></div><div class="ev ampl" style="left:42.65%"><span class="stem" style="top:173px;height:95px"></span><i></i><div class="card" style="top:268px">Persona 3 Portable<small>2009 · PSP · versión ampliada</small></div></div><div class="ev ampl" style="left:51.47%"><span class="stem" style="top:114px;height:43px"></span><i></i><div class="card" style="top:70px">Persona 4 Golden<small>2012 · PS Vita · PC en 2020</small></div></div><div class="ev orig" style="left:63.24%"><span class="stem" style="top:173px;height:37px"></span><i></i><div class="card" style="top:210px">Persona 5<small>2016 · PS4 y PS3 · Occidente 2017</small></div></div><div class="ev ampl" style="left:72.06%"><span class="stem" style="top:52px;height:105px"></span><i></i><div class="card" style="top:8px">Persona 5 Royal<small>2019 · PS4 · PC, Xbox y Switch en 2022</small></div></div><div class="ev rem" style="left:86.76%"><span class="stem" style="top:173px;height:37px"></span><i></i><div class="card" style="top:210px">Persona 3 Reload<small>2024 · PC, PS4, PS5 y Xbox · remake</small></div></div><div class="ev next" style="left:95.59%"><span class="stem" style="top:114px;height:43px"></span><i></i><div class="card" style="top:70px">Persona 4 Revival<small>2027 · febrero · remake anunciado</small></div></div></div>
+        <ul class="tlist"><li><b>1996</b><span>Persona · <span class='muted'>PlayStation</span></span></li><li><b>1999</b><span>Persona 2: Innocent Sin · <span class='muted'>PlayStation</span></span></li><li><b>2000</b><span>Persona 2: Eternal Punishment · <span class='muted'>PlayStation</span></span></li><li><b>2006</b><span>Persona 3 · <span class='muted'>PS2</span></span></li><li><b>2007</b><span>Persona 3 FES · <span class='muted'>PS2 · versión ampliada</span></span></li><li><b>2008</b><span>Persona 4 · <span class='muted'>PS2</span></span></li><li><b>2009</b><span>Persona 3 Portable · <span class='muted'>PSP · versión ampliada</span></span></li><li><b>2012</b><span>Persona 4 Golden · <span class='muted'>PS Vita · PC en 2020</span></span></li><li><b>2016</b><span>Persona 5 · <span class='muted'>PS4 y PS3 · Occidente 2017</span></span></li><li><b>2019</b><span>Persona 5 Royal · <span class='muted'>PS4 · PC, Xbox y Switch en 2022</span></span></li><li><b>2024</b><span>Persona 3 Reload · <span class='muted'>PC, PS4, PS5 y Xbox · remake</span></span></li><li><b>2027</b><span>Persona 4 Revival · <span class='muted'>febrero · remake anunciado</span></span></li></ul>
+      </div>
+      <div class="cpane" id="c3" hidden>
+        <dl class="gloss">
+          <div><dt>Unidades o copias vendidas</dt><dd>Cantidad de juegos vendidos, no dinero. <em>"M" = millones.</em></dd></div>
+          <div><dt>Físico</dt><dd>Disco o cartucho comprado en una tienda.</dd></div>
+          <div><dt>Digital</dt><dd>Juego descargado desde una tienda en línea (PlayStation Store, Steam, eShop).</dd></div>
+          <div><dt>Plataforma</dt><dd>Consola o computador donde se juega: PlayStation, Xbox, Nintendo o PC.</dd></div>
+          <div><dt>Steam</dt><dd>La principal tienda digital de juegos para PC. Todo lo que vende es digital.</dd></div>
+          <div><dt>Juego de rol (RPG)</dt><dd>Juego con una historia larga donde los personajes mejoran con el tiempo.</dd></div>
+          <div><dt>Versión ampliada</dt><dd>El mismo juego relanzado con contenido nuevo. <em>Ej.: Golden, Royal, FES.</em></dd></div>
+          <div><dt>Remake</dt><dd>El juego rehecho desde cero con gráficos actuales. <em>Ej.: Persona 3 Reload.</em></dd></div>
+          <div><dt>Spin-off y subserie</dt><dd>Spin-off: juego derivado de otro género. Subserie: un juego principal con sus versiones y spin-offs.</dd></div>
+          <div><dt>Cifra "mínima"</dt><dd>Atlus anuncia hitos ("más de 3 M"); la venta real puede ser mayor.</dd></div>
+          <div><dt>Mediana</dt><dd>El valor del medio. Se usa porque unos pocos juegos venden muchísimo y distorsionan el promedio.</dd></div>
+          <div><dt>Colores de la web</dt><dd>Azul PlayStation, rosado PC, amarillo Nintendo, verde Xbox, gris "otros o sin desglose". <em>El celeste marca lo que cada gráfico destaca.</em></dd></div>
+          <div><dt>Metacritic</dt><dd>Promedio de las notas de la crítica especializada, de 0 a 100.</dd></div>
+        </dl>
+      </div>
+      <div class="cpane" id="c4" hidden>
+        <div class="srcs">
+          <div class="s vg"><h4>VGChartz (Kaggle)</h4><p>Estimación de copias <b>físicas</b> por juego, plataforma y región, de 1995 a 2016. Incluye la nota de Metacritic.</p><p>Uso: comparar Persona con otros 1.380 juegos de rol.</p></div>
+          <div class="s"><h4>Atlus, Sega y Famitsu</h4><p>Cifras <b>oficiales</b> de 2012 a 2026, que suman <b>físico + digital</b>. Muchas son mínimos ("más de X").</p><p>Uso: ventas actuales de cada juego y de la saga.</p></div>
+          <div class="s st"><h4>Estimaciones de Steam</h4><p>VG Insights, Gamalytic y Raijin estiman las ventas en PC a partir de datos públicos de Steam. No son oficiales.</p><p>Uso: cuánto pesa el PC (se informa como rango).</p></div>
+          <div class="s mk"><h4>Sony y Square Enix</h4><p>Porcentaje digital del mercado en abril–junio 2026, informado en sus resultados.</p><p>Uso: contexto del formato; no es el dato de Persona.</p></div>
+        </div>
+        <div class="why"><b>Por qué las cifras no coinciden:</b> Persona 5 aparece con 0,48 M en VGChartz (solo copias físicas, solo Japón, a diciembre de 2016) y con 2,2 M+ en la cifra oficial de mayo de 2018 (físico + digital, en todo el mundo). Ambas son correctas; miden cosas distintas.</div>
+      </div>
+    </section>
+
+    <!-- PREGUNTA -->
+    <section class="screen" id="screen-pregunta" aria-label="Pregunta">
+      <div class="head"><span class="ransom" data-ransom="PREGUNTA"></span><button class="back" data-back>ESC · VOLVER</button></div>
+      <p class="lead">¿En qué plataformas, formatos y tipo de versión lanzar el próximo Persona?</p>
+      <div class="grid">
+        <div class="panel">
+          <span class="label">Para quién</span>
+          <ul class="list">
+            <li><b>Cliente:</b> equipo de marketing y distribución de Atlus, el estudio de Sega a cargo de la saga.</li>
+            <li><b>Decisión:</b> en qué plataformas salir desde el día 1, cuánto priorizar el formato digital y si planificar una versión ampliada tipo Golden o Royal.</li>
+          </ul>
+        </div>
+        <div class="panel r">
+          <span class="label cy">Preguntas específicas</span>
+          <ul class="list">
+            <li>¿Vende Persona más que un juego de rol típico?</li>
+            <li>¿Qué plataformas y formatos concentran las ventas, y cómo cambió después de 2016?</li>
+            <li>¿Venden más los originales o sus versiones ampliadas, y pesa la crítica?</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- DATOS -->
+    <section class="screen" id="screen-datos" aria-label="Datos">
+      <div class="head"><span class="ransom" data-ransom="DATOS"></span><button class="back" data-back>ESC · VOLVER</button></div>
+      <div class="grid">
+        <div class="panel">
+          <span class="label">Fuente</span>
+          <dl class="kv">
+            <dt>Base</dt><dd>Video Game Sales with Ratings (Kaggle): ventas estimadas por VGChartz y notas de Metacritic</dd>
+            <dt>Corte</dt><dd>Ventas acumuladas al 22-12-2016 · descargada el 20-10-2026</dd>
+            <dt>Fila</dt><dd>Un juego en una plataforma (p. ej., Persona 4 Golden en PS Vita)</dd>
+            <dt>Cobertura</dt><dd>1.418 juegos de rol y spin-offs de Megami Tensei, 1995–2016; 18 son de Persona</dd>
+          </dl>
+        </div>
+        <div class="panel r">
+          <span class="label cy">Variables</span>
+          <p class="muted" style="margin:0 0 8px">Cuantitativas</p>
+          <div class="chips">
+            <span class="chip">Ventas NA · EU · JP · resto <small>(M)</small></span>
+            <span class="chip">Ventas globales <small>(M)</small></span>
+            <span class="chip">Nota crítica <small>(0–100)</small></span>
+            <span class="chip d">% Japón <small>(creada)</small></span>
+          </div>
+          <p class="muted" style="margin:16px 0 8px">Categóricas</p>
+          <div class="chips">
+            <span class="chip">Plataforma</span>
+            <span class="chip d">Grupo <small>(creada)</small></span>
+            <span class="chip d">Familia de plataforma <small>(creada)</small></span>
+            <span class="chip d">Mercado principal <small>(creada)</small></span>
+          </div>
+        </div>
+        <div class="panel">
+          <span class="label">Bases complementarias</span>
+          <dl class="kv">
+            <dt>Oficiales</dt><dd>37 cifras de Atlus, Sega Sammy y Famitsu (2012–2026), con fuente y enlace</dd>
+            <dt>Steam</dt><dd>4 estimaciones de terceros (VG Insights, Gamalytic, Raijin)</dd>
+            <dt>Fila</dt><dd>Una cifra publicada sobre un juego, subserie o la saga, con su fecha de corte</dd>
+            <dt>Formato</dt><dd>3 cifras de abril–junio 2026: % digital de Sony y Square Enix, y ventas de Persona del trimestre</dd>
+            <dt>Uso</dt><dd>Se integran con concat y se comparan por título con la base 2016</dd>
+          </dl>
+        </div>
+      </div>
+    </section>
+
+    <!-- LIMPIEZA -->
+    <section class="screen" id="screen-limpieza" aria-label="Limpieza">
+      <div class="head"><span class="ransom" data-ransom="LIMPIEZA"></span><button class="back" data-back>ESC · VOLVER</button></div>
+      <div class="tabs" role="tablist" aria-label="Base revisada">
+        <button class="tab" role="tab" aria-selected="true" data-pane="lim-a">Base 2016 · RPG</button>
+        <button class="tab" role="tab" aria-selected="false" data-pane="lim-b">Cifras digitales · 2012–2026</button>
+      </div>
+      <div class="pane" id="lim-a">
+      <p class="lead">De 16.719 filas a 1.418 juegos de rol confiables</p>
+      <div class="grid">
+        <div class="panel">
+          <span class="label">Antes → después</span>
+          <div class="bars" id="clean-bars"></div>
+          <p class="muted" style="margin:14px 0 0">La barra muestra cuánto queda respecto del total inicial de cada revisión.</p>
+        </div>
+        <div class="panel r">
+          <span class="label cy">Decisiones</span>
+          <ul class="list">
+            <li><b>Persona 3</b> venía en dos filas (Occidente y "jp sales"): se unió en una sola con 0,66 M, tomando el máximo por región.</li>
+            <li><b>"tbd"</b> en la nota de usuarios pasó a faltante y la columna a número.</li>
+            <li><b>Nota de la crítica</b> faltante en 682 juegos: no se imputa, se usa con los 736 reseñados.</li>
+            <li><b>Extremos</b> (Pokémon, hasta 31,4 M) se conservan: se compara con medianas.</li>
+          </ul>
+        </div>
+      </div>
+      </div>
+      <div class="pane" id="lim-b" hidden>
+      <p class="lead">37 cifras oficiales + 4 estimaciones de Steam = 41 filas integradas</p>
+      <div class="grid">
+        <div class="panel">
+          <span class="label">Qué se encontró</span>
+          <div class="bars" id="clean-bars-b"></div>
+          <p class="muted" style="margin:14px 0 0">La barra muestra la proporción de filas afectadas.</p>
+        </div>
+        <div class="panel r">
+          <span class="label cy">Decisiones</span>
+          <ul class="list">
+            <li><b>Filas 18 y 28</b> son la suma de otras (verificado): se marcan como derivadas para no contar dos veces.</li>
+            <li><b>Mínimos</b> ("más de X") se leen como pisos, no como valores exactos.</li>
+            <li><b>Fechas</b> "AAAA" y "AAAA-MM" se ubican a mitad de año o fin de mes y quedan marcadas.</li>
+            <li><b>Envíos a tiendas</b> (1 fila) no se comparan con ventas al consumidor.</li>
+          </ul>
+        </div>
+      </div>
+      </div>
+    </section>
+
+    <!-- HALLAZGOS -->
+    <section class="screen" id="screen-hallazgos" aria-label="Hallazgos">
+      <div class="head"><span class="ransom" data-ransom="HALLAZGOS"></span><button class="back" data-back>ESC · VOLVER</button></div>
+      <div class="cards">
+        <article class="card">
+          <span class="q">Pregunta 1 · ventas</span>
+          <div class="big">2×</div>
+          <h3>Un Persona típico vende el doble que un RPG</h3>
+          <p>Mediana de 0,36 M frente a 0,18 M (1995–2016), con nota mediana 85 frente a 73.</p>
+          <div class="links"><small>Ver el gráfico que lo respalda</small><button class="goto" data-go="stats:grupo">Persona vs otros RPG →</button><button class="goto" data-go="stats:nota">Ventas según crítica →</button></div>
+        </article>
+        <article class="card">
+          <span class="q">Pregunta 2 · plataformas y formato</span>
+          <div class="big">40–57%</div>
+          <h3>Peso estimado de Steam en Persona 3 Reload</h3>
+          <p>Hasta 2016, PlayStation era el 88% de las ventas físicas y no había versión de PC. Hoy el físico en Japón cae 66% en la primera semana.</p>
+          <div class="links"><small>Ver el gráfico que lo respalda</small><button class="goto" data-go="stats:plat">Plataformas 2016 →</button><button class="goto" data-go="stats:ambos">Físico + digital →</button><button class="goto" data-go="digital:steam">PC / Steam →</button><button class="goto" data-go="digital:japon">Físico en Japón →</button></div>
+        </article>
+        <article class="card">
+          <span class="q">Pregunta 3 · versiones</span>
+          <div class="big">3,3×</div>
+          <h3>Persona 5 Royal frente a Persona 5</h3>
+          <p>Royal (7,25 M+) es el más vendido de la saga; Golden y Reload repiten el patrón. Los RPG con 90+ venden 1,44 M de mediana.</p>
+          <div class="links"><small>Ver el gráfico que lo respalda</small><button class="goto" data-go="stats:ver">Original vs versión →</button><button class="goto" data-go="stats:rank">Ranking de la saga →</button><button class="goto" data-go="stats:nota">Ventas según crítica →</button></div>
+        </article>
+      </div>
+    </section>
+
+    <!-- STATS -->
+    <section class="screen" id="screen-stats" aria-label="Gráficos">
+      <div class="head"><span class="ransom" data-ransom="STATS"></span><span class="era">Saga completa · 1995–2026</span><button class="back" data-back>ESC · VOLVER</button></div>
+      <div class="tabgroups" role="tablist" aria-label="Gráfico">
+        <div class="tg"><span class="tgl">Pregunta 1 · Ventas</span><div class="tabs"><button class="tab" role="tab" id="tab-rank" aria-selected="true" data-chart="rank">Ranking de la saga</button><button class="tab" role="tab" id="tab-sub" aria-selected="false" data-chart="sub">Por subserie</button><button class="tab" role="tab" id="tab-grupo" aria-selected="false" data-chart="grupo">Persona vs otros RPG</button></div></div>
+        <div class="tg"><span class="tgl">Pregunta 2 · Plataformas y formato</span><div class="tabs"><button class="tab" role="tab" id="tab-plat" aria-selected="false" data-chart="plat">Plataformas · físico 2016</button><button class="tab" role="tab" id="tab-ambos" aria-selected="false" data-chart="ambos">Plataformas · físico + digital</button><button class="tab" role="tab" id="tab-formato" aria-selected="false" data-chart="formato">Formato digital 2026</button></div></div>
+        <div class="tg"><span class="tgl">Pregunta 3 · Versiones y calidad</span><div class="tabs"><button class="tab" role="tab" id="tab-ver" aria-selected="false" data-chart="ver">Original vs versión</button><button class="tab" role="tab" id="tab-nota" aria-selected="false" data-chart="nota">Ventas según crítica</button></div></div>
+      </div>
+      <div class="panel" style="transform:none">
+        <div class="chead" id="chart-head" hidden></div><span class="label" id="chart-title"></span>
+        <div class="legend" id="legend"></div>
+        <div class="bars" id="chart"></div>
+        <p id="tip" aria-live="polite"></p><div class="how" id="chart-how" hidden></div>
+      </div>
+    </section>
+
+    <!-- DIGITAL -->
+    <section class="screen" id="screen-digital" aria-label="Era digital">
+      <div class="head"><span class="ransom" data-ransom="DIGITAL"></span><span class="era">Físico + digital · 2012–2026</span><button class="back" data-back>ESC · VOLVER</button></div>
+      <div class="tabs" role="tablist" aria-label="Vista digital">
+        <button class="tab" role="tab" aria-selected="true" data-dchart="serie">Saga en el tiempo</button>
+        <button class="tab" role="tab" aria-selected="false" data-dchart="titulo">Por título</button>
+        <button class="tab" role="tab" aria-selected="false" data-dchart="japon">Físico en Japón</button>
+        <button class="tab" role="tab" aria-selected="false" data-dchart="steam">PC / Steam</button>
+      </div>
+      <div class="panel" style="transform:none">
+        <div class="chead" id="dchart-head" hidden></div><span class="label" id="dchart-title"></span>
+        <div class="legend" id="dlegend"></div>
+        <div class="bars" id="dchart"></div>
+        <p id="dtip" class="muted" style="margin:12px 0 0;font-size:16px"></p><div class="how" id="dchart-how" hidden></div>
+        <details class="src" id="dsrc"><summary>Fuentes</summary><ul></ul></details>
+      </div>
+    </section>
+
+    <!-- PLAN -->
+    <section class="screen" id="screen-plan" aria-label="Plan">
+      <div class="head"><span class="ransom" data-ransom="PLAN"></span><button class="back" data-back>ESC · VOLVER</button></div>
+      <div class="grid">
+        <div class="panel">
+          <span class="label">Recomendación</span>
+          <ul class="list">
+            <li><b>Lanzar desde el día 1 en PlayStation y PC (Steam)</b>, y evaluar Xbox y Switch como hizo Royal: el PC puede ser cerca de la mitad de las ventas.<div class="links"><button class="goto" data-go="stats:ambos">Plataformas físico + digital →</button><button class="goto" data-go="digital:steam">PC / Steam →</button></div></li>
+            <li><b>Priorizar el formato digital y un lanzamiento mundial simultáneo</b>: el físico japonés pierde peso y ya antes de 2016 la mayoría de las ventas eran fuera de Japón.<div class="links"><button class="goto" data-go="stats:formato">Formato digital 2026 →</button><button class="goto" data-go="digital:japon">Físico en Japón →</button><button class="goto" data-go="digital:serie">Saga en el tiempo →</button></div></li>
+            <li><b>Planificar una versión ampliada desde el inicio</b> (tipo Golden o Royal) y proteger la calidad del lanzamiento original.<div class="links"><button class="goto" data-go="stats:ver">Original vs versión →</button><button class="goto" data-go="stats:nota">Ventas según crítica →</button></div></li>
+          </ul>
+        </div>
+        <div class="panel r">
+          <span class="label cy">Limitaciones</span>
+          <ul class="list">
+            <li>Fuentes de distinto tipo: estimaciones físicas hasta 2016 y luego anuncios oficiales (muchos son mínimos) y estimaciones de Steam.</li>
+            <li>Las cifras oficiales suelen sumar plataformas y formatos; el peso del PC se apoya en dos juegos.</li>
+            <li>Las versiones ampliadas llevan más años a la venta y en más plataformas: asociación, no causalidad.</li>
+            <li class="muted">Faltaría: ventas digitales por región, Game Pass y presupuesto de marketing.<div class="links"><button class="goto" data-go="contexto:c4">Fuentes de datos →</button></div></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer id="hud-bottom">
+    <span class="k"><span class="key">W S · ↑ ↓</span>Elegir</span>
+    <span class="k"><span class="key">Enter</span>Entrar</span>
+    <span class="k"><span class="key">A D · ← →</span>Pestañas</span>
+    <span class="k"><span class="key">Esc</span>Volver</span>
+    <button id="sound" aria-pressed="false">Sonido: no</button>
+    <button id="motion" aria-pressed="true">Movimiento: sí</button>
+    <button id="proj" aria-pressed="false" title="Atajo: tecla P"><span class="key">P</span>Letra grande: no</button>
+    <button id="expl" aria-pressed="true" title="Atajo: tecla E"><span class="key">E</span>Explicaciones: sí</button>
+  </footer>
+</div>
+
+<script>
+(() => {
+  /* ======== DATOS ======== */
+  const GRUPO = [["Persona",0.36,18,85],["Otros Megami Tensei",0.26,20,80],["Otros RPG",0.18,1380,73]];
+  const CLEAN = [["Filtro RPG + saga","16.719 → 1.506",1506/16719],["Juegos en varias filas","45 → 22",22/45],["Años fuera de rango","1.483 → 1.418",1418/1483],["Con nota de la crítica","736 de 1.418",736/1418]];
+  const fmt = v => v.toFixed(2).replace(".", ",");
+  const miles = v => v.toLocaleString("es-CL");
+  const CLEAN_B = [["Integradas","37 + 4 = 41",1],["Mínimos","17 de 37",17/37],["Sin día exacto","13 de 41",13/41],["Sumas de otras","2 de 37",2/37]];
+  const SRC = {
+    rpg: ["https://gematsu.com/2022/11/persona-5-royal-shipments-and-digital-sales-top-one-million-for-new-platforms-3-3-million-including-ps4", "Atlus vía Gematsu (nov 2022)"],
+    rpgsite: ["https://www.rpgsite.net/news/18063-the-whole-persona-series-has-sold-over-27-million-units-after-july-2025", "Sega Sammy / Atlus vía RPG Site (2025)"],
+    vgc: ["https://www.vgchartz.com/article/468143/persona-series-sales-top-30-million-units/", "Atlus vía VGChartz (jun 2026)"],
+    glu: ["https://gameluster.com/persona-franchise-reaches-15-5-million-sales/", "Sega Sammy Integrated Report vía Gameluster (2022)"],
+    inven: ["https://www.invenglobal.com/articles/19414/outerplane-announces-1st-anniversary-event-bunny-moon-party", "Sega Sammy vía Inven Global (P5 Royal, 2025)"],
+    kit3: ["https://www.kitguru.net/gaming/joao-silva/atlus-announces-persona-3-reload-has-sold-3-million-copies-worldwide/", "Atlus vía KitGuru (P3 Reload, 3 M)"],
+    push: ["https://www.pushsquare.com/news/2019/11/persona_5_royal_leaps_straight_to_the_top_of_the_sales_charts_in_japan", "Atlus vía Push Square (P5, 2018)"],
+    gs: ["https://gamespot.com/articles/persona-series-has-now-sold-over-15-million-games/1100-6493414/", "Atlus/Sega vía GameSpot (2021)"],
+    gem21: ["https://gematsu.com/2021/06/persona-series-sales-top-15-million-persona-5-royal-at-1-8-million-persona-5-strikers-at-1-3-million-and-persona-4-golden-for-pc-at-900000", "Atlus vía Gematsu (P4G PC, 2021)"],
+    fam19: ["https://gematsu.com/2019/11/famitsu-sales-10-28-19-11-3-19", "Famitsu vía Gematsu (2019)"],
+    fam24: ["https://gematsu.com/2024/02/famitsu-sales-1-29-24-2-4-24", "Famitsu vía Gematsu (2024)"],
+    wn: ["https://wnhub.io/news/finance/item-48431", "VG Insights vía WN Hub"],
+    sp: ["https://www.steampulse.org/game/2161700", "VG Insights vía SteamPulse"],
+    rai: ["https://raijin.gg/app/2161700/Persona_3_Reload", "Raijin"],
+    kitpc: ["https://www.kitguru.net/?p=522012", "Atlus vía KitGuru (P4G PC)"],
+  };
+  const DIG = {
+    serie: { title: "Ventas acumuladas de la saga (millones, físico + digital)", legend: `<span class="muted">Mínimos anunciados · incluye spin-offs</span>`,
+      max: 30, f: v => v.toFixed(1).replace(".", ","),
+      rows: [["Marzo 2022", [[15.5, "var(--paper)"]]], ["Noviembre 2022", [[16.8, "var(--paper)"]]], ["Julio 2025", [[27, "var(--paper)"]]], ["Junio 2026", [[30, "var(--foam)"]]]], src: ["glu", "rpg", "rpgsite", "vgc"] },
+    titulo: { title: "Último acumulado oficial por título (millones)",
+      legend: `<span><i style="background:var(--ot)"></i>Lo que veía la base física 2016</span><span><i style="background:var(--paper)"></i>Total oficial posterior (físico + digital)</span>`,
+      max: 7.25, f: v => v.toFixed(2).replace(".", ","),
+      rows: [["P5 Royal · todas · 2025", [[0, "var(--ot)"], [7.25, "var(--paper)"]]], ["P3 Reload · todas · 2026", [[0, "var(--ot)"], [3, "var(--paper)"]]],
+             ["Persona 5 · PS4+PS3 · 2018", [[0.48, "var(--ot)"], [1.72, "var(--paper)"]]], ["P4 Golden · PS Vita · 2021", [[1.12, "var(--ot)"], [0.38, "var(--paper)"]]],
+             ["P4 Golden · PC · 2021", [[0, "var(--ot)"], [1.0, "var(--pc)"]]]], src: ["inven", "kit3", "push", "gs", "kitpc"] },
+    japon: { title: "Japón · primera semana en formato físico (unidades)", legend: `<span class="muted">Lanzamientos originales · sin digital ni relanzamientos</span>`,
+      max: 337767, f: miles,
+      rows: [["P4 Golden · Vita · 2012", [[137076, "var(--paper)"]]], ["Persona 5 · PS4+PS3 · 2016", [[337767, "var(--foam)"]]], ["P5 Royal · PS4 · 2019", [[201448, "var(--paper)"]]], ["P3 Reload · PS5+PS4 · 2024", [[116392, "var(--paper)"]]]], src: ["fam19", "fam24"] },
+    steam: { title: "PC · Steam frente al total (millones)", legend: `<span><i style="background:var(--pc)"></i>PC / Steam</span><span><i style="background:var(--paper)"></i>Total o consola</span>`,
+      max: 3, f: v => v.toFixed(1).replace(".", ","),
+      rows: [["P3 Reload · total oficial 2026", [[3, "var(--paper)"]]], ["P3R Steam · VG Insights 2026", [[1.7, "var(--pc)"]]], ["P3R Steam · VG Insights 2025", [[1.4, "var(--pc)"]]], ["P3R Steam · Raijin 2026", [[1.2, "var(--pc)"]]],
+             ["P4 Golden · PS Vita (9 años)", [[1.5, "var(--paper)"]]], ["P4 Golden · PC (1er año)", [[1.0, "var(--pc)"]]]], src: ["kit3", "sp", "wn", "rai", "gem21", "kitpc"] },
+  };
+
+  /* ======== LETRAS RECORTADAS ======== */
+  const hash = s => { let h = 2166136261; for (const c of s) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return (h ^ h >>> 9) >>> 0; };
+  document.querySelectorAll("[data-ransom]").forEach(el => {
+    const text = el.dataset.ransom; el.setAttribute("aria-label", text);
+    [...text].forEach((c, i) => {
+      const s = document.createElement("span");
+      if (c === " ") { s.className = "sp"; el.appendChild(s); return; }
+      const h = hash(text + i);
+      s.className = "ch"; s.textContent = c; s.setAttribute("aria-hidden", "true");
+      const v = (h >> 7) % 9;
+      if (v === 0 || v === 4) s.classList.add("box"); else if (v === 1 || v === 6) s.classList.add("boxw"); else if (v === 2) s.classList.add("cy");
+      if (i === 0) s.classList.add("boxw");
+      s.style.setProperty('--t', `rotate(${(h % 15) - 7}deg) scale(${0.88 + ((h >> 3) % 26) / 100}) translateY(${((h >> 5) % 7) - 3}px)`);
+      s.style.setProperty('--d', `${-((h >> 4) % 34) / 10}s`); s.style.setProperty('--i', i);
+      el.appendChild(s);
+    });
+  });
+
+  /* ======== SONIDO (sintetizado, se activa con el botón) ======== */
+  let ctx = null, soundOn = false;
+  const soundBtn = document.getElementById("sound");
+  soundBtn.addEventListener("click", () => {
+    soundOn = !soundOn;
+    soundBtn.textContent = "Sonido: " + (soundOn ? "sí" : "no");
+    soundBtn.setAttribute("aria-pressed", soundOn);
+    if (soundOn && !ctx) { try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { ctx = null; } }
+    blip(880);
+  });
+  function blip(f = 660) {
+    if (!soundOn || !ctx) return;
+    try {
+      const o = ctx.createOscillator(), g = ctx.createGain(), t = ctx.currentTime;
+      o.type = "triangle"; o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f * 1.6, t + .06);
+      g.gain.setValueAtTime(.12, t); g.gain.exponentialRampToValueAtTime(.0001, t + .12);
+      o.connect(g).connect(ctx.destination); o.start(t); o.stop(t + .13);
+    } catch (e) {}
+  }
+
+  /* ======== NAVEGACIÓN ======== */
+  const items = [...document.querySelectorAll(".menu-item")];
+  const wipeEl = document.getElementById("wipe");
+  let reduced = false;
+  const projBtn = document.getElementById("proj");
+  function setProyector(on) {
+    document.body.classList.toggle("proyector", on);
+    projBtn.innerHTML = `<span class="key">P</span>Letra grande: ${on ? "sí" : "no"}`; projBtn.setAttribute("aria-pressed", on);
+    try { localStorage.setItem("persona-proyector", on ? "1" : "0"); } catch (e) {}
+    // los gráficos se vuelven a dibujar para ajustarse al nuevo tamaño
+    if (current === "stats") drawChart(activeChart);
+    if (current === "digital") drawD(activeD);
+  }
+  projBtn.addEventListener("click", () => setProyector(!document.body.classList.contains("proyector")));
+  const explBtn = document.getElementById("expl");
+  function setExplicaciones(on) {
+    document.body.classList.toggle("sin-exp", !on);
+    explBtn.innerHTML = `<span class="key">E</span>Explicaciones: ${on ? "sí" : "no"}`; explBtn.setAttribute("aria-pressed", on);
+    try { localStorage.setItem("persona-explicaciones", on ? "1" : "0"); } catch (e) {}
+  }
+  explBtn.addEventListener("click", () => setExplicaciones(document.body.classList.contains("sin-exp")));
+  const motionBtn = document.getElementById("motion");
+  motionBtn.addEventListener("click", () => {
+    reduced = !reduced; document.body.classList.toggle("still", reduced);
+    motionBtn.textContent = "Movimiento: " + (reduced ? "no" : "sí"); motionBtn.setAttribute("aria-pressed", !reduced);
+    if (!reduced) requestAnimationFrame(frame);
+  });
+  let current = "home", sel = 0, busy = false;
+  document.body.dataset.screen = "home";
+
+  function select(i) {
+    const n = (i + items.length) % items.length;
+    if (n !== sel) blip(620);
+    sel = n; items.forEach((m, j) => m.classList.toggle("sel", j === n));
+  }
+  function show(name) {
+    document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+    const s = document.getElementById("screen-" + name); s.classList.add("active"); s.scrollTop = 0;
+    document.body.dataset.screen = name; current = name; kick();
+    if (name === "limpieza") animateBars(document.getElementById("lim-a").hidden ? "#clean-bars-b" : "#clean-bars");
+    if (name === "digital") drawD(activeD);
+    if (name === "stats") drawChart(activeChart);
+    if (name === "home") items[sel].focus({ preventScroll: true });
+    document.querySelectorAll(".back").forEach(b => { b.textContent = volverA ? "ESC · VOLVER A " + volverA.toUpperCase() : "ESC · VOLVER"; });
+  }
+  let volverA = null;   // pantalla a la que vuelve Esc cuando se llegó desde HALLAZGOS o PLAN
+  function volver() { const destino = volverA || "home"; volverA = null; goTo(destino); }
+  function abrirGrafico(pantalla, pestaña) {
+    if (busy) return;
+    volverA = current;
+    if (pantalla === "stats") { activeChart = pestaña; document.querySelectorAll("[data-chart]").forEach(t => t.setAttribute("aria-selected", t.dataset.chart === pestaña)); }
+    else if (pantalla === "digital") { activeD = pestaña; document.querySelectorAll("[data-dchart]").forEach(t => t.setAttribute("aria-selected", t.dataset.dchart === pestaña)); }
+    else if (pantalla === "contexto") { ctxTabs.forEach(t => t.setAttribute("aria-selected", t.dataset.ctx === pestaña)); document.querySelectorAll(".cpane").forEach(p => { p.hidden = p.id !== pestaña; }); }
+    goTo(pantalla);
+  }
+  document.querySelectorAll("[data-hallazgos]").forEach(b => b.addEventListener("click", () => goTo("hallazgos")));
+  document.querySelectorAll("[data-go]").forEach(b => b.addEventListener("click", () => { const [p, t] = b.dataset.go.split(":"); abrirGrafico(p, t); }));
+  function goTo(name) {
+    if (busy || name === current) return;
+    busy = true; blip(name === "home" ? 440 : 880);
+    if (reduced) { show(name); busy = false; return; }
+    wipeEl.classList.remove("go"); void wipeEl.offsetWidth; wipeEl.classList.add("go");
+    setTimeout(() => show(name), 370);
+    setTimeout(() => { busy = false; }, 800);
+  }
+  items.forEach((it, i) => {
+    it.addEventListener("mouseenter", () => select(i));
+    it.addEventListener("focus", () => select(i));
+    it.addEventListener("click", () => goTo(it.dataset.target));
+  });
+  document.querySelectorAll("[data-back]").forEach(b => b.addEventListener("click", volver));
+  // W A S D funcionan igual que las flechas (W = arriba, A = izquierda, S = abajo, D = derecha)
+  const WASD = { w: "ArrowUp", a: "ArrowLeft", s: "ArrowDown", d: "ArrowRight" };
+  addEventListener("keydown", e => {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target?.tagName || "")) return;
+    if (e.key.toLowerCase() === "e") { setExplicaciones(document.body.classList.contains("sin-exp")); e.preventDefault(); return; }
+    if (e.key.toLowerCase() === "p") { setProyector(!document.body.classList.contains("proyector")); e.preventDefault(); return; }
+    const esWasd = e.key.length === 1 && WASD[e.key.toLowerCase()];
+    const key = esWasd || e.key;
+    if (current === "home") {
+      if (key === "ArrowDown") { select(sel + 1); items[sel].focus({ preventScroll: true }); e.preventDefault(); }
+      else if (key === "ArrowUp") { select(sel - 1); items[sel].focus({ preventScroll: true }); e.preventDefault(); }
+      else if (e.key === "Enter" && document.activeElement?.id !== "sound") { goTo(items[sel].dataset.target); e.preventDefault(); }
+    } else if (e.key === "Escape" || e.key === "Backspace") { volver(); }
+    else if (current === "digital" && (key === "ArrowRight" || key === "ArrowLeft")) {
+      const order = Object.keys(DIG); const k = order.indexOf(activeD);
+      setD(order[(k + (key === "ArrowRight" ? 1 : order.length - 1)) % order.length]); e.preventDefault();
+    }
+    else if (current === "contexto" && (key === "ArrowRight" || key === "ArrowLeft")) {
+      const ids = ctxTabs.map(t => t.dataset.ctx), k = ids.indexOf(ctxTabs.find(t => t.getAttribute("aria-selected") === "true").dataset.ctx);
+      setCtx(ids[(k + (key === "ArrowRight" ? 1 : ids.length - 1)) % ids.length]); e.preventDefault();
+    }
+    else if (current === "limpieza" && (key === "ArrowRight" || key === "ArrowLeft")) {
+      setPane(document.getElementById("lim-a").hidden ? "lim-a" : "lim-b"); e.preventDefault();
+    }
+    else if (esWasd && (key === "ArrowUp" || key === "ArrowDown")) {   // W y S desplazan la pantalla, como las flechas
+      document.getElementById("screen-" + current).scrollBy({ top: key === "ArrowDown" ? 90 : -90, behavior: reduced ? "auto" : "smooth" });
+      e.preventDefault();
+    }
+    else if (current === "stats" && (key === "ArrowRight" || key === "ArrowLeft")) {
+      const order = ["rank", "sub", "grupo", "plat", "ambos", "formato", "ver", "nota"]; const k = order.indexOf(activeChart);
+      setChart(order[(k + (key === "ArrowRight" ? 1 : order.length - 1)) % order.length]); e.preventDefault();
+    }
+  });
+  select(0);
+
+  /* ======== BARRAS ======== */
+  function animateBars(sel) {
+    const root = document.querySelector(sel);
+    root.querySelectorAll(".fill,.seg").forEach(f => { f.style.width = "0"; });
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      root.querySelectorAll(".fill,.seg").forEach((f, i) => setTimeout(() => { f.style.width = f.dataset.w + "%"; }, reduced ? 0 : i * 18));
+    }));
+  }
+  document.getElementById("clean-bars").innerHTML = CLEAN.map(([n, t, f]) =>
+    `<div class="bar"><span class="nm" title="${n}">${n}</span><span class="track"><span class="fill" data-w="${(f * 100).toFixed(1)}"></span></span><span class="val" style="font-size:13px">${t}</span></div>`).join("");
+  document.querySelector("#clean-bars").parentElement.querySelectorAll(".bar").forEach(b => b.style.gridTemplateColumns = "minmax(0,10rem) minmax(0,1fr) 7.5rem");
+
+  document.getElementById("clean-bars-b").innerHTML = CLEAN_B.map(([n, t, f]) =>
+    `<div class="bar" style="grid-template-columns:minmax(0,11rem) minmax(0,1fr) 7rem"><span class="nm">${n}</span><span class="track"><span class="fill" data-w="${(f * 100).toFixed(1)}"></span></span><span class="val" style="font-size:13px">${t}</span></div>`).join("");
+  // pestañas de LIMPIEZA (paneles)
+  const limTabs = [...document.querySelectorAll("[data-pane]")];
+  function setPane(id) {
+    limTabs.forEach(t => t.setAttribute("aria-selected", t.dataset.pane === id));
+    document.querySelectorAll(".pane").forEach(p => { p.hidden = p.id !== id; });
+    animateBars(id === "lim-a" ? "#clean-bars" : "#clean-bars-b"); blip(740);
+  }
+  limTabs.forEach(t => t.addEventListener("click", () => setPane(t.dataset.pane)));
+
+
+  /* ======== GRÁFICOS NUEVOS (vista previa) ======== */
+  const PREV = {"serie": [["2022-03-31", 15.5], ["2022-11-30", 16.8], ["2025-07-31", 27.0], ["2026-06-08", 30.0]], "pts": [[75, 1.26, "o"], [76, 0.67, "o"], [70, 0.46, "o"], [77, 0.57, "o"], [77, 0.16, "o"], [50, 0.12, "o"], [56, 0.03, "o"], [65, 0.04, "o"], [62, 0.02, "o"], [83, 0.02, "o"], [51, 0.08, "o"], [48, 0.05, "o"], [72, 0.04, "o"], [64, 0.43, "o"], [63, 0.39, "o"], [86, 0.23, "o"], [67, 0.16, "o"], [61, 0.23, "o"], [71, 0.1, "o"], [64, 0.19, "o"], [59, 0.06, "o"], [72, 0.37, "o"], [63, 0.19, "o"], [64, 0.1, "o"], [71, 0.05, "o"], [48, 0.03, "o"], [70, 0.12, "o"], [70, 0.26, "o"], [68, 0.06, "o"], [74, 0.16, "o"], [76, 0.18, "o"], [75, 0.12, "o"], [74, 0.42, "o"], [71, 0.24, "o"], [65, 0.02, "o"], [76, 0.03, "o"], [79, 0.14, "o"], [87, 1.25, "o"], [83, 0.2, "o"], [78, 0.69, "o"], [77, 0.26, "o"], [60, 0.12, "o"], [50, 0.08, "o"], [75, 0.1, "o"], [80, 0.27, "o"], [69, 0.02, "o"], [36, 0.25, "o"], [66, 0.15, "o"], [58, 0.05, "o"], [60, 0.05, "o"], [59, 0.2, "o"], [79, 0.91, "o"], [69, 0.21, "o"], [63, 0.09, "o"], [78, 0.04, "o"], [83, 0.14, "o"], [53, 0.2, "o"], [78, 0.02, "o"], [81, 1.14, "o"], [81, 0.48, "o"], [79, 0.21, "o"], [81, 0.19, "o"], [83, 0.57, "o"], [78, 0.18, "o"], [70, 0.03, "o"], [77, 0.02, "o"], [85, 1.28, "o"], [77, 0.65, "o"], [82, 0.05, "o"], [83, 0.07, "o"], [65, 0.47, "o"], [94, 1.85, "o"], [92, 1.34, "o"], [61, 0.15, "o"], [56, 0.07, "o"], [62, 0.13, "o"], [62, 0.17, "o"], [73, 0.11, "o"], [55, 0.07, "o"], [78, 0.06, "o"], [62, 0.03, "o"], [83, 3.17, "o"], [52, 0.23, "o"], [75, 0.16, "o"], [65, 0.37, "o"], [72, 0.24, "o"], [67, 0.52, "o"], [53, 0.08, "o"], [80, 1.54, "o"], [87, 0.96, "o"], [52, 0.21, "o"], [89, 2.02, "o"], [89, 1.0, "o"], [91, 0.17, "o"], [91, 1.28, "o"], [91, 0.74, "o"], [89, 0.07, "o"], [89, 1.66, "o"], [87, 0.39, "o"], [65, 0.11, "o"], [58, 0.66, "o"], [69, 0.08, "o"], [57, 0.43, "o"], [62, 0.03, "o"], [70, 0.16, "o"], [89, 1.82, "o"], [90, 0.01, "o"], [83, 0.03, "o"], [84, 0.38, "o"], [83, 0.16, "o"], [94, 1.59, "o"], [88, 0.13, "o"], [87, 1.05, "o"], [88, 5.14, "o"], [86, 1.91, "o"], [87, 1.41, "o"], [75, 0.12, "o"], [42, 0.59, "o"], [55, 0.09, "o"], [48, 0.16, "o"], [54, 0.03, "o"], [49, 0.07, "o"], [71, 0.33, "o"], [43, 0.24, "o"], [84, 0.33, "o"], [83, 0.25, "o"], [78, 0.51, "o"], [80, 0.57, "o"], [80, 0.29, "o"], [74, 0.21, "o"], [82, 0.18, "o"], [87, 0.22, "o"], [84, 0.33, "o"], [72, 0.07, "o"], [62, 0.24, "o"], [72, 0.03, "o"], [72, 0.14, "o"], [87, 0.02, "o"], [60, 0.05, "o"], [61, 0.12, "o"], [73, 0.13, "o"], [85, 0.73, "o"], [89, 2.01, "o"], [85, 0.93, "o"], [91, 0.51, "o"], [87, 1.67, "o"], [86, 2.56, "o"], [73, 0.36, "o"], [57, 0.36, "o"], [53, 1.69, "o"], [75, 1.09, "o"], [68, 0.21, "o"], [80, 1.62, "o"], [87, 5.8, "o"], [75, 1.76, "o"], [77, 1.42, "o"], [65, 0.71, "o"], [84, 1.57, "o"], [78, 1.72, "o"], [89, 5.21, "o"], [57, 0.07, "o"], [82, 0.54, "o"], [78, 0.36, "o"], [78, 1.74, "o"], [75, 0.78, "o"], [56, 0.07, "o"], [63, 0.65, "o"], [58, 0.13, "o"], [61, 0.31, "o"], [70, 0.06, "o"], [81, 0.02, "o"], [60, 0.05, "o"], [56, 0.01, "o"], [70, 0.03, "o"], [80, 0.02, "o"], [72, 0.18, "o"], [71, 0.38, "o"], [72, 0.37, "o"], [74, 0.17, "o"], [61, 0.01, "o"], [69, 0.2, "o"], [64, 0.24, "o"], [69, 0.22, "o"], [48, 0.08, "o"], [65, 0.27, "o"], [62, 0.3, "o"], [80, 0.43, "o"], [79, 0.33, "o"], [77, 0.24, "o"], [75, 0.32, "o"], [82, 0.26, "o"], [77, 0.32, "o"], [80, 0.26, "o"], [59, 0.36, "o"], [74, 0.42, "o"], [77, 0.18, "o"], [63, 0.08, "o"], [69, 0.04, "o"], [71, 0.06, "o"], [85, 2.66, "o"], [89, 4.27, "o"], [75, 0.32, "o"], [80, 5.1, "o"], [61, 0.28, "o"], [83, 0.07, "o"], [65, 0.19, "o"], [71, 0.07, "o"], [91, 0.98, "o"], [90, 3.94, "o"], [93, 4.93, "o"], [84, 1.28, "o"], [87, 7.17, "o"], [88, 4.22, "o"], [64, 0.07, "o"], [66, 0.05, "o"], [84, 1.18, "o"], [82, 3.11, "o"], [84, 4.06, "o"], [73, 1.13, "o"], [58, 0.32, "o"], [45, 0.09, "o"], [67, 0.58, "o"], [80, 0.8, "o"], [89, 0.52, "o"], [75, 0.47, "o"], [64, 0.26, "o"], [77, 0.67, "o"], [69, 0.53, "o"], [76, 0.21, "o"], [63, 0.49, "o"], [77, 2.09, "o"], [85, 0.6, "o"], [77, 0.55, "o"], [94, 5.31, "o"], [83, 2.45, "o"], [80, 0.75, "o"], [87, 2.13, "o"], [88, 1.15, "o"], [83, 0.27, "o"], [92, 0.29, "o"], [92, 9.72, "o"], [90, 7.86, "o"], [92, 8.04, "o"], [85, 1.27, "o"], [86, 0.8, "o"], [85, 5.28, "o"], [66, 0.19, "o"], [77, 0.24, "o"], [87, 0.23, "o"], [63, 0.3, "o"], [92, 5.95, "o"], [81, 1.38, "o"], [83, 5.33, "o"], [82, 2.17, "o"], [79, 2.63, "o"], [79, 0.73, "o"], [80, 1.5, "o"], [71, 0.58, "o"], [92, 2.02, "o"], [81, 0.61, "o"], [75, 0.32, "o"], [64, 0.09, "o"], [70, 1.19, "o"], [68, 0.67, "o"], [57, 0.36, "o"], [67, 0.37, "o"], [73, 0.65, "o"], [59, 0.06, "o"], [67, 0.26, "o"], [56, 0.57, "o"], [58, 0.09, "o"], [58, 0.08, "o"], [53, 0.23, "o"], [52, 0.25, "o"], [59, 0.4, "o"], [61, 0.19, "o"], [60, 0.05, "o"], [69, 0.28, "o"], [69, 0.1, "o"], [91, 1.77, "o"], [79, 0.78, "o"], [86, 1.22, "o"], [63, 0.06, "o"], [71, 0.02, "o"], [78, 0.07, "o"], [76, 0.07, "o"], [89, 0.25, "o"], [90, 0.2, "o"], [71, 0.29, "o"], [77, 0.49, "o"], [68, 0.39, "o"], [81, 0.11, "o"], [60, 0.27, "o"], [89, 0.03, "o"], [84, 0.01, "o"], [84, 0.02, "o"], [84, 0.17, "o"], [79, 0.79, "o"], [70, 0.25, "o"], [70, 0.02, "o"], [62, 0.14, "o"], [69, 0.22, "o"], [68, 0.14, "o"], [47, 0.43, "o"], [62, 0.05, "o"], [55, 0.01, "o"], [68, 0.13, "o"], [45, 0.42, "o"], [55, 0.16, "o"], [83, 0.01, "o"], [59, 0.26, "o"], [75, 0.19, "o"], [68, 0.7, "o"], [46, 0.1, "o"], [51, 0.44, "o"], [65, 0.05, "o"], [76, 0.1, "o"], [89, 0.7, "o"], [87, 0.33, "o"], [60, 0.03, "o"], [43, 0.09, "o"], [72, 0.23, "o"], [82, 0.01, "o"], [60, 0.1, "o"], [85, 6.4, "o"], [75, 1.98, "o"], [87, 4.33, "o"], [68, 0.88, "o"], [66, 0.94, "o"], [82, 2.05, "o"], [76, 1.85, "o"], [55, 0.37, "o"], [72, 0.15, "o"], [81, 0.3, "o"], [81, 0.86, "o"], [80, 0.87, "o"], [76, 0.08, "o"], [75, 0.09, "o"], [79, 0.18, "o"], [44, 0.09, "o"], [67, 0.26, "o"], [68, 0.04, "o"], [57, 0.02, "o"], [66, 1.07, "o"], [69, 0.26, "o"], [53, 0.31, "o"], [68, 0.06, "o"], [73, 0.03, "o"], [68, 0.52, "o"], [71, 0.22, "o"], [71, 0.07, "o"], [72, 0.08, "o"], [72, 0.16, "o"], [68, 0.05, "o"], [68, 0.12, "o"], [78, 0.9, "o"], [80, 0.15, "o"], [76, 0.05, "o"], [70, 0.23, "o"], [73, 0.32, "o"], [86, 0.34, "o"], [82, 0.23, "o"], [79, 0.19, "o"], [59, 0.12, "o"], [80, 0.24, "o"], [78, 0.55, "o"], [74, 0.08, "o"], [69, 0.53, "o"], [74, 0.03, "o"], [69, 0.29, "o"], [66, 0.22, "o"], [77, 0.13, "o"], [70, 0.19, "o"], [69, 0.1, "o"], [41, 0.1, "o"], [82, 0.01, "o"], [81, 0.83, "o"], [78, 0.38, "o"], [81, 0.36, "o"], [73, 0.39, "o"], [82, 2.5, "o"], [65, 0.21, "o"], [74, 0.73, "o"], [50, 0.33, "o"], [73, 0.91, "o"], [89, 0.67, "o"], [91, 2.92, "o"], [94, 0.39, "o"], [94, 1.45, "o"], [96, 3.1, "o"], [89, 0.96, "o"], [93, 1.42, "o"], [93, 3.05, "o"], [56, 0.1, "o"], [51, 0.05, "o"], [79, 0.42, "o"], [67, 0.12, "o"], [69, 0.18, "o"], [44, 0.03, "o"], [62, 0.02, "o"], [45, 0.09, "o"], [59, 0.11, "o"], [68, 0.5, "o"], [86, 3.89, "o"], [71, 1.34, "o"], [72, 2.57, "o"], [81, 5.49, "o"], [84, 2.21, "o"], [66, 0.04, "o"], [75, 0.14, "o"], [73, 0.31, "o"], [58, 0.14, "o"], [58, 0.1, "o"], [65, 0.05, "o"], [55, 0.15, "o"], [57, 0.08, "o"], [81, 0.59, "o"], [64, 0.15, "o"], [69, 0.52, "o"], [57, 0.4, "o"], [62, 0.24, "o"], [53, 0.1, "o"], [60, 0.07, "o"], [57, 0.05, "o"], [91, 0.03, "o"], [82, 0.02, "o"], [82, 0.01, "o"], [85, 1.51, "o"], [68, 0.62, "o"], [67, 0.29, "o"], [72, 0.19, "o"], [83, 0.56, "o"], [87, 0.2, "o"], [93, 0.14, "o"], [70, 0.37, "o"], [58, 0.02, "o"], [66, 0.09, "o"], [46, 0.08, "o"], [65, 0.1, "o"], [78, 0.15, "o"], [54, 0.31, "o"], [73, 0.31, "o"], [75, 0.42, "o"], [75, 2.31, "o"], [87, 2.25, "o"], [81, 2.1, "o"], [79, 0.58, "o"], [56, 0.25, "o"], [83, 0.35, "p"], [86, 0.72, "p"], [83, 0.13, "p"], [84, 0.13, "p"], [85, 0.08, "p"], [76, 0.32, "p"], [93, 1.12, "p"], [83, 0.72, "p"], [76, 0.11, "o"], [89, 0.2, "o"], [71, 0.08, "o"], [80, 0.19, "o"], [64, 0.93, "o"], [69, 0.87, "o"], [68, 0.19, "o"], [64, 0.11, "o"], [81, 0.14, "o"], [65, 0.1, "o"], [76, 0.14, "o"], [89, 0.02, "o"], [76, 0.01, "o"], [65, 0.29, "o"], [91, 0.03, "o"], [66, 0.13, "o"], [53, 1.58, "o"], [80, 1.02, "o"], [54, 1.56, "o"], [59, 1.27, "o"], [69, 2.16, "o"], [68, 1.29, "o"], [68, 2.27, "o"], [69, 1.25, "o"], [64, 1.24, "o"], [73, 2.55, "o"], [76, 6.42, "o"], [62, 2.02, "o"], [83, 7.71, "o"], [70, 0.39, "o"], [84, 0.67, "o"], [66, 0.5, "o"], [69, 0.06, "o"], [65, 0.13, "o"], [85, 0.29, "o"], [74, 0.66, "o"], [53, 0.22, "o"], [66, 0.4, "o"], [72, 0.04, "o"], [67, 0.07, "o"], [71, 0.2, "o"], [56, 0.14, "o"], [72, 0.73, "o"], [74, 0.34, "o"], [67, 0.05, "o"], [77, 0.13, "o"], [60, 0.19, "o"], [69, 0.22, "o"], [47, 0.22, "o"], [60, 0.14, "o"], [65, 0.08, "o"], [36, 0.08, "o"], [44, 0.06, "o"], [76, 0.1, "o"], [68, 0.1, "o"], [68, 0.01, "o"], [83, 0.84, "o"], [58, 0.58, "o"], [77, 0.53, "o"], [77, 0.41, "o"], [78, 0.56, "o"], [78, 0.53, "o"], [79, 0.36, "o"], [55, 0.23, "o"], [71, 0.06, "o"], [70, 0.61, "o"], [71, 0.54, "o"], [57, 0.02, "o"], [56, 0.11, "o"], [51, 0.05, "o"], [81, 0.29, "o"], [75, 0.1, "o"], [63, 0.23, "o"], [73, 0.28, "o"], [85, 0.24, "o"], [76, 0.15, "o"], [66, 0.47, "o"], [83, 0.58, "m"], [79, 0.31, "m"], [84, 0.26, "m"], [79, 0.3, "m"], [78, 0.38, "m"], [78, 0.13, "m"], [82, 0.08, "m"], [82, 0.39, "m"], [78, 0.22, "p"], [86, 0.66, "p"], [89, 0.63, "p"], [89, 0.63, "p"], [90, 0.82, "p"], [80, 0.28, "m"], [64, 0.1, "o"], [69, 0.11, "o"], [77, 0.08, "o"], [58, 0.13, "o"], [74, 0.08, "o"], [61, 0.1, "o"], [71, 0.2, "o"], [68, 0.05, "o"], [93, 0.09, "o"], [84, 0.22, "o"], [76, 0.2, "o"], [74, 0.88, "o"], [65, 0.03, "o"], [77, 0.51, "o"], [85, 0.18, "o"], [85, 0.93, "o"], [82, 0.93, "o"], [59, 0.09, "o"], [46, 0.1, "o"], [47, 0.03, "o"], [63, 0.74, "o"], [70, 0.51, "o"], [71, 0.19, "o"], [74, 0.64, "o"], [75, 0.33, "o"], [72, 0.79, "o"], [74, 0.72, "o"], [80, 1.1, "o"], [80, 1.71, "o"], [66, 0.02, "o"], [86, 1.37, "o"], [93, 0.13, "o"], [94, 2.2, "o"], [85, 2.97, "o"], [74, 0.03, "o"], [79, 0.24, "o"], [71, 0.03, "o"], [72, 0.19, "o"], [82, 0.67, "o"], [63, 0.65, "o"], [76, 0.26, "o"], [76, 0.35, "o"], [74, 0.15, "o"], [77, 0.03, "o"], [73, 0.13, "o"], [74, 0.52, "o"], [76, 0.21, "o"], [72, 0.05, "o"], [73, 0.22, "o"], [72, 0.01, "o"], [73, 0.03, "o"], [67, 0.3, "o"], [69, 0.2, "o"], [60, 0.15, "o"], [63, 0.25, "o"], [70, 0.36, "o"], [72, 0.74, "o"], [55, 0.13, "o"], [87, 0.54, "o"], [88, 0.5, "o"], [78, 0.81, "o"], [77, 0.98, "o"], [72, 0.49, "o"], [76, 0.29, "o"], [86, 1.1, "o"], [68, 0.51, "o"], [79, 0.73, "o"], [78, 1.23, "o"], [71, 0.84, "o"], [72, 0.4, "o"], [75, 0.82, "o"], [78, 0.57, "o"], [66, 0.43, "o"], [65, 0.16, "o"], [71, 0.52, "o"], [65, 0.02, "o"], [76, 0.21, "o"], [75, 0.1, "o"], [69, 0.04, "o"], [87, 2.86, "o"], [94, 0.25, "o"], [93, 3.11, "o"], [94, 4.38, "o"], [71, 0.9, "o"], [77, 1.28, "o"], [94, 3.88, "o"], [92, 6.4, "o"], [96, 8.79, "o"], [74, 0.06, "o"], [66, 0.01, "o"], [66, 0.69, "o"], [80, 0.65, "o"], [43, 0.08, "o"], [74, 1.87, "o"], [63, 0.14, "o"], [58, 0.03, "o"], [68, 0.09, "o"], [86, 0.2, "o"], [77, 0.23, "o"], [90, 0.16, "o"], [80, 0.18, "o"], [67, 0.25, "o"], [85, 0.02, "o"], [67, 0.22, "o"], [74, 0.29, "o"], [73, 0.59, "o"], [74, 0.17, "o"], [56, 0.01, "o"], [60, 0.07, "o"], [68, 0.02, "o"], [53, 0.21, "o"], [81, 0.06, "o"], [93, 0.72, "o"], [92, 3.97, "o"], [91, 1.3, "o"], [86, 0.33, "o"], [68, 0.14, "o"], [88, 0.78, "o"], [42, 0.17, "o"], [77, 0.06, "o"], [64, 0.06, "o"], [63, 0.07, "o"], [65, 0.78, "o"], [83, 0.07, "o"], [62, 0.17, "o"], [67, 0.05, "o"], [50, 0.7, "o"], [76, 0.2, "o"], [70, 0.47, "o"], [67, 0.53, "o"], [65, 0.04, "o"], [61, 0.06, "o"], [45, 0.77, "o"], [68, 1.1, "o"], [58, 0.2, "o"], [65, 0.34, "o"], [92, 0.86, "o"], [53, 0.23, "o"], [50, 0.22, "o"], [48, 0.18, "o"], [35, 0.13, "o"], [86, 1.27, "o"], [83, 0.54, "o"], [81, 0.8, "o"], [84, 0.47, "o"], [74, 0.42, "o"], [80, 0.36, "o"], [61, 0.05, "o"], [47, 0.11, "o"], [42, 0.13, "o"], [86, 0.02, "o"], [52, 0.07, "o"], [81, 0.1, "o"], [77, 0.06, "o"], [60, 0.63, "o"], [64, 0.93, "o"], [78, 0.62, "o"], [69, 0.15, "o"], [71, 0.41, "o"], [64, 0.14, "o"], [73, 0.1, "o"], [82, 0.16, "o"], [70, 0.08, "o"], [77, 0.34, "o"], [77, 0.21, "o"], [93, 6.29, "o"], [90, 2.09, "o"], [88, 0.32, "o"], [82, 1.82, "o"], [91, 4.09, "o"], [91, 1.32, "o"], [81, 0.53, "o"], [79, 1.93, "o"], [82, 0.9, "o"], [82, 0.25, "o"], [82, 0.64, "o"], [84, 0.28, "o"], [84, 0.44, "o"], [92, 0.91, "o"], [84, 0.84, "o"], [84, 1.47, "o"], [83, 1.74, "o"], [81, 0.36, "o"], [73, 0.1, "o"], [79, 0.24, "o"], [72, 0.14, "o"], [64, 0.04, "o"], [80, 0.14, "o"], [71, 0.06, "o"]], "apil": {"Persona": {"Microsoft": 2.7, "Nintendo": 9.2, "Sony portátil": 33.8, "Sony sobremesa": 54.3}, "Otros RPG": {"Microsoft": 10.9, "Nintendo": 45.9, "Otras": 0.6, "PC": 5.4, "Sony portátil": 6.7, "Sony sobremesa": 30.6}}, "pn": [["Persona 2: Eternal Punishment", "PS", 83.0, 0.35000000000000003], ["Persona 4: Arena", "PS3", 86.0, 0.72], ["Persona 4: Arena", "X360", 83.0, 0.13], ["Persona 4: Arena Ultimax", "PS3", 84.0, 0.13], ["Persona 4: Arena Ultimax", "X360", 85.0, 0.07999999999999999], ["Persona 4: Dancing All Night", "PSV", 76.0, 0.32], ["Persona 4: Golden", "PSV", 93.0, 1.1199999999999999], ["Persona Q: Shadow of the Labyrinth", "3DS", 83.0, 0.7200000000000001], ["Shin Megami Tensei: Persona", "PSP", 78.0, 0.22000000000000003], ["Shin Megami Tensei: Persona 3", "PS2", 86.0, 0.6599999999999999], ["Shin Megami Tensei: Persona 3 FES", "PS2", 89.0, 0.6300000000000001], ["Shin Megami Tensei: Persona 3 Portable", "PSP", 89.0, 0.6300000000000001], ["Shin Megami Tensei: Persona 4", "PS2", 90.0, 0.82]]};
+  const NS = "http://www.w3.org/2000/svg";
+  const fmt1 = v => v.toFixed(1).replace(".", ",");
+  function svgBox(el, h) {
+    const w = Math.max(320, el.clientWidth || 900);
+    el.innerHTML = `<svg class="viz" viewBox="0 0 ${w} ${h}" role="img"></svg>`;
+    return [el.firstChild, w];
+  }
+  function tagSVG(x, y, txt, rot = -2) {
+    const wd = txt.length * 6.6 + 16;
+    return `<g class="vtag" transform="translate(${x},${y}) rotate(${rot})"><rect x="0" y="-15" width="${wd}" height="21"></rect><text x="8" y="0">${txt}</text></g>`;
+  }
+
+  // 1) LÍNEA: saga en el tiempo, con eje de fechas real
+  function drawLine(el) {
+    const H = 360, [svg, W] = svgBox(el, H), m = { l: 74, r: 40, t: 46, b: 62 };
+    const t0 = Date.parse("2022-01-01"), t1 = Date.parse("2026-12-31");
+    const X = t => m.l + (Date.parse(t) - t0) / (t1 - t0) * (W - m.l - m.r);
+    const Y = v => H - m.b - v / 32 * (H - m.t - m.b);
+    let g = "";
+    [0, 10, 20, 30].forEach(v => { g += `<line class="grid" x1="${m.l}" x2="${W - m.r}" y1="${Y(v)}" y2="${Y(v)}"></line><text x="${m.l - 10}" y="${Y(v) + 4}" text-anchor="end">${v}</text>`; });
+    [2022, 2023, 2024, 2025, 2026].forEach(a => { const x = X(a + "-01-01"); g += `<line class="axis" x1="${x}" x2="${x}" y1="${H - m.b}" y2="${H - m.b + 6}"></line><text x="${x}" y="${H - m.b + 24}" text-anchor="middle">${a}</text>`; });
+    g += `<line class="axis" x1="${m.l}" x2="${W - m.r}" y1="${Y(0)}" y2="${Y(0)}"></line>`;
+    // hitos (fechas tomadas de las notas del CSV de cifras oficiales)
+    [["2022-10-21", "Royal llega a PC, Xbox y Switch", 22], ["2024-02-02", "Sale Persona 3 Reload", 22]].forEach(([f, txt, yy]) => {
+      const x = X(f); g += `<line class="ev" x1="${x}" x2="${x}" y1="${m.t - 10}" y2="${Y(0)}"></line>` + tagSVG(x + 6, yy, txt);
+    });
+    const P = PREV.serie.map(([f, v]) => [X(f), Y(v), v]);
+    const path = P.map((p, i) => (i ? "L" : "M") + p[0] + " " + p[1]).join(" ");
+    g += `<defs><linearGradient id="ar" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#5fd3ff" stop-opacity=".35"></stop><stop offset="1" stop-color="#5fd3ff" stop-opacity="0"></stop></linearGradient></defs>`;
+    g += `<path d="${path} L${P[P.length - 1][0]} ${Y(0)} L${P[0][0]} ${Y(0)} Z" fill="url(#ar)"></path>`;
+    g += `<path class="line draw" d="${path}"></path>`;
+    P.forEach(([x, y, v], i) => {
+      const last = i === P.length - 1, r = last ? 9 : 7;
+      g += `<rect class="pop" style="animation-delay:${.3 + i * .25}s" x="${x - r}" y="${y - r}" width="${2 * r}" height="${2 * r}" fill="${last ? "#5fd3ff" : "#f4f6fb"}" stroke="#06070b" stroke-width="2"><title>${PREV.serie[i][0]}: ${fmt1(v)} M</title></rect>`;
+      g += `<text class="num${last ? " hl" : ""}" x="${x}" y="${y - 16}" text-anchor="${i === 0 ? "start" : last ? "end" : "middle"}">${fmt1(v)} M</text>`;
+    });
+    g += `<text x="${(m.l + W - m.r) / 2}" y="${H - 8}" text-anchor="middle">FECHA EN QUE ATLUS O SEGA ANUNCIÓ LA CIFRA</text>`;
+    g += `<text transform="translate(18 ${(m.t + H - m.b) / 2}) rotate(-90)" text-anchor="middle">MILLONES DE COPIAS ACUMULADAS</text>`;
+    svg.innerHTML = g;
+    const ln = svg.querySelector(".draw"); ln.style.setProperty("--len", ln.getTotalLength());
+  }
+
+  // 2) DISPERSIÓN: nota de la crítica vs ventas (escala log), Persona destacado
+  function drawScatter(el) {
+    const H = 380, [svg, W] = svgBox(el, H), m = { l: 54, r: 24, t: 20, b: 44 };
+    const X = n => m.l + (n - 30) / 70 * (W - m.l - m.r);
+    const Y = v => H - m.b - (Math.log10(Math.max(v, .01)) + 2) / (Math.log10(40) + 2) * (H - m.t - m.b);
+    let g = "";
+    [[.01, "0,01"], [.1, "0,1"], [1, "1"], [10, "10"]].forEach(([v, t]) => { g += `<line class="grid" x1="${m.l}" x2="${W - m.r}" y1="${Y(v)}" y2="${Y(v)}"></line><text x="${m.l - 10}" y="${Y(v) + 4}" text-anchor="end">${t}</text>`; });
+    [40, 50, 60, 70, 80, 90, 100].forEach(n => { g += `<text x="${X(n)}" y="${H - m.b + 22}" text-anchor="middle">${n}</text>`; });
+    g += `<line class="axis" x1="${m.l}" x2="${W - m.r}" y1="${H - m.b}" y2="${H - m.b}"></line>`;
+    g += `<text x="${W - m.r}" y="${H - 6}" text-anchor="end">NOTA DE LA CRÍTICA (METACRITIC)</text>`;
+    g += `<text x="${m.l - 44}" y="${m.t - 4}">MILLONES DE COPIAS (ESCALA LOG)</text>`;
+    // medianas por tramo (las mismas del gráfico de barras)
+    [[60, 69, .17], [70, 79, .26], [80, 89, .58], [90, 100, 1.44]].forEach(([a, b, v], i) => {
+      g += `<line class="med" x1="${X(a)}" x2="${X(b)}" y1="${Y(v)}" y2="${Y(v)}"></line>`;
+      if (i === 3 && W >= 640) g += `<text class="num" x="${X(b) - 2}" y="${Y(v) + 22}" text-anchor="end">MEDIANA 90+: 1,44 M</text>`;
+    });
+    const orden = { o: 0, m: 1, p: 2 }, pts = [...PREV.pts].sort((a, b) => orden[a[2]] - orden[b[2]]);
+    pts.forEach(([n, v, k]) => { g += `<circle class="dot-${k}" cx="${X(n + (k === "o" ? (Math.random() - .5) * .8 : 0))}" cy="${Y(v)}" r="${k === "p" ? 7 : k === "m" ? 4.5 : 3}"></circle>`; });
+    PREV.pn.forEach(([j, pl, n, v]) => { g += `<circle class="dot-p" cx="${X(n)}" cy="${Y(v)}" r="7"><title>${j.replace("Shin Megami Tensei: ", "")} (${pl}): nota ${n}, ${fmt(v)} M</title></circle>`; });
+    const lab = (j, txt, dx, dy) => { const r = PREV.pn.find(q => q[0] === j); const x = X(r[2]), y = Y(r[3]); g += `<line class="lead" x1="${x}" y1="${y}" x2="${x + dx}" y2="${y + dy}"></line>` + tagSVG(x + dx + (dx < 0 ? -txt.length * 6.6 - 16 : 0), y + dy + 5, txt); };
+    const chico = W < 640;   // en celular: sin etiquetas, el detalle aparece al tocar cada punto
+    if (!chico) lab("Persona 4: Golden", "Persona 4 Golden · 93", -40, -46);
+    if (!chico) lab("Shin Megami Tensei: Persona 4", "Persona 4 · 90", -46, 44);
+    svg.innerHTML = g;
+  }
+
+  // Barra apilada genérica: filas = [nombre, subtítulo, [[valor%, color, etiqueta, clase], ...], esReferencia]
+  function stackGen(el, filas) {
+    el.innerHTML = `<div class="stack">` + filas.map(([n, sub, segs, ref]) =>
+      `<div class="row${ref ? " ref" : ""}"><span class="who">${n}<small>${sub}</small></span><div class="bar100">` +
+      segs.map(([v, c, et, cls, txt]) => {
+        const min = el.clientWidth < 600 ? 15 : 6;   // en pantallas angostas, sin texto en segmentos chicos
+        const label = txt !== undefined ? txt : cls === "nd" ? et : v >= min ? fmt1(v) + "%" : "";
+        return `<div class="sg${cls ? " " + cls : ""}" title="${et}${cls === "nd" ? "" : ": " + fmt1(v) + "%"}" style="background:${c}" data-w="${v}"><span>${label}</span></div>`;
+      }).join("") +
+      `</div></div>`).join("") + `</div>`;
+    requestAnimationFrame(() => requestAnimationFrame(() => el.querySelectorAll(".sg").forEach((x, i) => setTimeout(() => { x.style.width = x.dataset.w + "%"; }, i * 60))));
+  }
+  // 5) Formato digital en un mismo trimestre (abril–junio 2026)
+  function drawFormato(el) {
+    stackGen(el, [
+      ["PlayStation", "PS4 + PS5 · todas las editoras", [[82, "#f4f6fb", "Digital"], [18, "#a3b6d1", "Físico"]]],
+      ["Square Enix", "editora japonesa de RPG", [[90.1, "#f4f6fb", "Digital"], [9.9, "#a3b6d1", "Físico"]]],
+      ["Saga Persona", "1,04 M unidades en el trimestre", [[100, "#3a4458", "FORMATO NO INFORMADO POR SEGA", "nd"]]],
+    ]);
+    legendEl.innerHTML = `<span><i style="background:#f4f6fb"></i>Digital</span><span><i style="background:#a3b6d1"></i>Físico</span><span class="muted">Abril–junio 2026 · fuentes: <a href="https://fullcleared.com/news/playstation-software-holds-steady-as-hardware-slips/" target="_blank" rel="noopener">Sony</a>, <a href="https://godisageek.com/2026/08/square-enix-90-percent-digital-sales/" target="_blank" rel="noopener">Square Enix</a>, <a href="https://personacentral.com/persona-sales-q1-27/" target="_blank" rel="noopener">Sega</a></span>`;
+  }
+
+
+
+  /* ======== CONTEXTO y encabezados de gráfico ======== */
+  const ctxTabs = [...document.querySelectorAll("[data-ctx]")];
+  function setCtx(id) {
+    ctxTabs.forEach(t => t.setAttribute("aria-selected", t.dataset.ctx === id));
+    document.querySelectorAll(".cpane").forEach(p => { p.hidden = p.id !== id; }); blip(740);
+  }
+  ctxTabs.forEach(t => t.addEventListener("click", () => setCtx(t.dataset.ctx)));
+  function setHead(pre, o) {
+    const head = document.getElementById(pre + "-head"), how = document.getElementById(pre + "-how"), lbl = document.getElementById(pre + "-title");
+    if (!o) { head.hidden = how.hidden = true; lbl.hidden = false; return; }
+    head.innerHTML = `<h3>${o.titulo}</h3><div class="meta">${o.meta.map(([k, v]) => `<span><b>${k}</b>${v}</span>`).join("")}</div>`;
+    how.innerHTML = `<div><b>Cómo leerlo</b>${o.leer}</div><div><b>Qué significa</b>${o.signif}</div>`;
+    head.hidden = how.hidden = false; lbl.hidden = true;
+  }
+
+  // Barras al 100% con columna PlayStation a la derecha.
+  // filas = [nombre, subtítulo, segmentos[[%, color, etiqueta, clase, texto]], psTexto, psNota, esReferencia]
+  function stackPS(el, filas, ejeTitulo) {
+    const angosto = el.clientWidth < 600, min = angosto ? 40 : 6;   // en celular solo se rotulan los segmentos grandes
+    el.innerHTML = `<div class="stack"><div class="row ps"><span></span><span></span><span class="psh">PlayStation</span></div>` +
+      filas.map(([n, sub, segs, ps, psNota, ref]) =>
+        `<div class="row ps${ref ? " ref" : ""}"><span class="who">${n}<small>${sub}</small></span><div class="bar100">` +
+        segs.map(([v, c, et, cls, txt]) => `<div class="sg${cls ? " " + cls : ""}" title="${et}" style="background:${c}" data-w="${v}"><span>${txt !== undefined ? (angosto ? "" : txt) : v >= min ? fmt1(v) + "%" : ""}</span></div>`).join("") +
+        `</div><span class="psv">${ps}<small>${psNota}</small></span></div>`).join("") +
+      `</div><div class="pctaxis"><span></span><div class="ticks">${(angosto ? [0, 50, 100] : [0, 25, 50, 75, 100]).map(t => `<span style="left:${t}%">${t}%</span>`).join("")}</div><span></span><div class="ttl">${ejeTitulo}</div></div>`;
+    requestAnimationFrame(() => requestAnimationFrame(() => el.querySelectorAll(".sg").forEach((x, i) => setTimeout(() => { x.style.width = x.dataset.w + "%"; }, i * 60))));
+  }
+  const C_PS = "#3d9cff", C_PS2 = "#9fd0ff", C_PC = "#ff5c86", C_NIN = "#ffc61f", C_XB = "#36eaa3", C_OT = "#a3b6d1";
+  function drawAmbosPS(el) {
+    stackPS(el, [
+      ["Persona hasta 2016", "referencia · solo copias físicas", [[88.1, C_PS, "PlayStation 88,1%"], [9.2, C_NIN, "Nintendo 9,2%"], [2.7, C_XB, "Xbox 2,7%"]], "88,1%", "PS, PS2, PS3, PS4, PSP, Vita", true],
+      ["Persona 4 Golden", "a mar 2021 · 2,4 M copias", [[62.5, C_PS, "PlayStation (PS Vita) 62,5%"], [37.5, C_PC, "PC (Steam) 37,5%"]], "62,5%", "PS Vita"],
+      ["Persona 5 Royal", "a nov 2022 · 3,3 M copias", [[69.7, C_PS, "PlayStation (PS4) 69,7%"], [30.3, "#8b98b2", "PS5 + Xbox + Switch + PC, sin desglose 30,3%", "mix"]], "69,7% o más", "PS4 + parte del gris (PS5)"],
+      ["Persona 3 Reload", "2025–26 · 3,0 M copias · estimado", [[40, C_PC, "PC (Steam), estimación baja 40%", "", "PC 40–57%"], [17, C_PC, "Rango de la estimación de Steam", "rango", ""], [43, "#8b98b2", "Consolas sin desglose (PlayStation, Xbox, Switch) 43–60%", "mix", "consolas 43–60%"]], "sin dato", "Sega no separa consolas"],
+    ], "% de las copias vendidas de cada juego");
+    legendEl.innerHTML = `<span><i style="background:${C_PS}"></i>PlayStation</span><span><i style="background:${C_PC}"></i>PC (Steam)</span><span><i style="background:${C_NIN}"></i>Nintendo</span><span><i style="background:${C_XB}"></i>Xbox</span><span><i style="background:repeating-linear-gradient(135deg,#8b98b2 0 3px,#64708a 3px 6px)"></i>Varias plataformas sin desglose</span><span><i style="background:repeating-linear-gradient(135deg,#ff5c86 0 3px,rgba(255,92,134,.5) 3px 6px)"></i>Rango de la estimación</span>`;
+  }
+  function drawPlatPS(el) {
+    const d = PREV.apil, P = d["Persona"], O = d["Otros RPG"];
+    const seg = (x) => [["Sony sobremesa", C_PS], ["Sony portátil", C_PS2], ["Nintendo", C_NIN], ["Microsoft", C_XB], ["PC", C_PC], ["Otras", C_OT]]
+      .filter(([k]) => (x[k] || 0) > 0).map(([k, c]) => [x[k], c, `${k}: ${fmt1(x[k])}%`]);
+    const psP = P["Sony sobremesa"] + P["Sony portátil"], psO = O["Sony sobremesa"] + O["Sony portátil"];
+    stackPS(el, [
+      ["Persona", "18 versiones", seg(P), fmt1(psP) + "%", "PlayStation sobremesa + portátil"],
+      ["Otros juegos de rol", "1.380 juegos", seg(O), fmt1(psO) + "%", "PlayStation sobremesa + portátil"],
+    ], "% de las copias físicas vendidas, 1995–2016");
+    legendEl.innerHTML = [["PlayStation sobremesa (PS1–PS4)", C_PS], ["PlayStation portátil (PSP, Vita)", C_PS2], ["Nintendo", C_NIN], ["Microsoft (Xbox)", C_XB], ["PC", C_PC], ["Otras", C_OT]]
+      .map(([k, c]) => `<span><i style="background:${c}"></i>${k}</span>`).join("");
+  }
+  function ejeX(el, max, ticks, titulo, cols, fmtT) {
+    const c = cols || "minmax(0,15rem) minmax(0,1fr) 3.6rem", f = fmtT || (t => String(t).replace(".", ","));
+    el.insertAdjacentHTML("beforeend", `<div class="xaxis" style="grid-template-columns:${c}"><span></span><div class="ticks">${ticks.map(t => `<span style="left:${(t / max * 100).toFixed(2)}%">${f(t)}</span>`).join("")}</div><span></span><div class="ttl">${titulo}</div></div>`);
+  }
+  const HEAD_D = {
+    titulo: { titulo: "La base de 2016 no ve a los dos juegos más vendidos de la saga",
+      meta: [["Qué mide", "copias de cada juego: lo que registraba la base de 2016 (gris) y lo que muestra la cifra oficial posterior (total de la barra)"], ["Unidad", "millones de copias"], ["Período", "base: dic 2016 · cifra oficial: 2018 a 2026"], ["Fuente", "VGChartz y Atlus/Sega"]],
+      leer: "El largo total de cada barra es la última cifra oficial del juego. La parte gris es lo que ya aparecía en la base física de 2016; la blanca es lo que esa base no veía (en rosado, la versión de PC): ventas posteriores, digitales y en otras plataformas.",
+      signif: "Royal (7,25 M+) y Reload (3 M+) no existen en la base de 2016, y Persona 5 pasó de 0,48 M a 2,2 M+. Por eso, para la etapa actual el análisis usa las cifras oficiales.",
+      ticks: [0, 1, 2, 3, 4, 5, 6, 7], eje: "Millones de copias vendidas" },
+    japon: { titulo: "En Japón, la venta física de la primera semana cayó 66% entre Persona 5 y Persona 3 Reload",
+      meta: [["Qué mide", "copias físicas vendidas en Japón en la primera semana de cada lanzamiento"], ["Unidad", "copias"], ["Período", "lanzamientos de 2012, 2016, 2019 y 2024"], ["Fuente", "Famitsu"]],
+      leer: "Cada barra es el lanzamiento original de un juego en Japón, sin contar relanzamientos posteriores. Solo cuenta copias físicas vendidas en tiendas, no descargas.",
+      signif: "La venta física en Japón bajó mientras la saga crecía en el mundo: el físico japonés dejó de ser el centro de las ventas. No significa que Japón compre menos Persona, porque las descargas no están en estas cifras.",
+      ticks: [0, 100000, 200000, 300000], eje: "Copias físicas vendidas en la primera semana", fmtT: t => t.toLocaleString("es-CL") },
+    steam: { titulo: "Según estimaciones, entre 40% y 57% de las copias de Persona 3 Reload se vendieron en PC",
+      meta: [["Qué mide", "copias vendidas en PC (Steam) frente al total del juego o a su versión de consola"], ["Unidad", "millones de copias"], ["Período", "cifras de 2021 a 2026"], ["Fuente", "Atlus, VG Insights y Raijin"]],
+      leer: "Barras blancas: el total del juego o su versión de consola. Barras rosadas: las copias en PC (Steam), el mismo color del PC en toda la web. Las tres estimaciones de Reload se muestran por separado para ver el rango.",
+      signif: "El PC ya es una plataforma central: Steam equivale a entre 40% y 57% de Reload, y Golden vendió 1 M+ en PC en su primer año, cerca de lo que hizo en PS Vita en nueve años.",
+      ticks: [0, 1, 2, 3], eje: "Millones de copias vendidas" },
+  };
+  /* ======== ERA DIGITAL ======== */
+  let activeD = "serie";
+  const dEl = document.getElementById("dchart");
+  document.querySelectorAll("[data-dchart]").forEach(t => t.addEventListener("click", () => setD(t.dataset.dchart)));
+  function setD(k) {
+    activeD = k; blip(740);
+    document.querySelectorAll("[data-dchart]").forEach(t => t.setAttribute("aria-selected", t.dataset.dchart === k));
+    drawD(k);
+  }
+  function drawD(k) {
+    const d = DIG[k];
+    setHead("dchart", null); document.getElementById("dlegend").hidden = false;
+    if (k === "serie") {
+      setHead("dchart", { titulo: "Las ventas de la saga casi se duplicaron entre 2022 y 2026",
+        meta: [["Qué mide", "total de copias vendidas por toda la saga desde 1996 (incluye spin-offs)"], ["Unidad", "millones de copias"], ["Período", "anuncios de mar 2022 a jun 2026"], ["Fuente", "Atlus y Sega Sammy"]],
+        leer: "Cada rombo es un anuncio oficial del total vendido hasta esa fecha. La línea siempre sube porque las ventas se acumulan; mientras más empinada, más rápido se vendió. Las líneas punteadas marcan lanzamientos.",
+        signif: "Entre noviembre de 2022 y julio de 2025 la saga sumó 10,2 M de copias: el período en que Royal llegó a más plataformas y salió Persona 3 Reload." });
+      document.getElementById("dlegend").hidden = true;
+      document.getElementById("dchart-title").textContent = "Ventas acumuladas de la saga (millones, físico + digital)";
+      document.getElementById("dlegend").innerHTML = `<span class="muted">Mínimos anunciados · incluye spin-offs · eje con fechas reales</span>`;
+      drawLine(dEl);
+      document.getElementById("dtip").textContent = "";
+      document.querySelector("#dsrc ul").innerHTML = d.src.map(k2 => `<li><a href="${SRC[k2][0]}" target="_blank" rel="noopener">${SRC[k2][1]}</a></li>`).join("");
+      return;
+    }
+    document.getElementById("dchart-title").textContent = d.title;
+    document.getElementById("dlegend").innerHTML = d.legend;
+    if (HEAD_D[k]) setHead("dchart", HEAD_D[k]);
+    dEl.innerHTML = d.rows.map(([n, segs]) => {
+      const total = segs.reduce((a, [v]) => a + v, 0);
+      const html = segs.map(([v, c]) => `<span class="seg" style="background:${c}" data-w="${(v / d.max * 100).toFixed(2)}"></span>`).join("");
+      return `<div class="bar"><span class="nm" title="${n}">${n}</span><span class="track" style="background:rgba(244,246,251,.08)">${html}</span><span class="val">${d.f(total)}</span></div>`;
+    }).join("");
+    if (HEAD_D[k]) ejeX(dEl, d.max, HEAD_D[k].ticks, HEAD_D[k].eje, "minmax(0,18rem) minmax(0,1fr) 4.6rem", HEAD_D[k].fmtT);
+    document.getElementById("dtip").textContent = "";
+    document.querySelector("#dsrc ul").innerHTML = d.src.map(k2 => `<li><a href="${SRC[k2][0]}" target="_blank" rel="noopener">${SRC[k2][1]}</a></li>`).join("");
+    animateBars("#dchart");
+  }
+  drawD("serie");
+
+  /* ======== GRÁFICOS ======== */
+  let activeChart = "rank";
+  // Ranking de la saga: mejor cifra disponible por juego (todas sus plataformas sumadas).
+  // "of" = oficial Atlus/Sega, físico + digital (mínimos); "vg" = VGChartz, solo físico hasta 2016.
+  const RANK = [["Persona 5 Royal", 7.25, "of", "2025 · todas las plataformas"], ["Persona 3 Reload", 3.0, "of", "2026 · todas las plataformas"],
+    ["Persona 4 Golden", 2.5, "of", "2021 · PS Vita 1,5 + PC 1,0"], ["Persona 5", 2.2, "of", "2018 · PS4 + PS3"],
+    ["Persona 4 Arena", 0.85, "vg", "PS3 + Xbox 360"], ["Persona 4", 0.82, "vg", "PS2"], ["Persona Q", 0.72, "vg", "3DS"],
+    ["Persona (1996)", 0.67, "vg", "PS + PSP"], ["Persona 3", 0.66, "vg", "PS2"], ["Persona 3 FES", 0.63, "vg", "PS2"],
+    ["Persona 3 Portable", 0.63, "vg", "PSP"], ["Persona 2: Eternal Punishment", 0.40, "vg", "PS + PSP"],
+    ["Persona 4: Dancing All Night", 0.32, "vg", "PS Vita"], ["Persona 2: Innocent Sin", 0.30, "vg", "PSP"], ["Persona 4 Arena Ultimax", 0.21, "vg", "PS3 + Xbox 360"]];
+  const SUB = [["Subserie Persona 5", 13.0, "P5, Royal, Strikers, Tactica, Dancing in Starlight, The Phantom X"],
+    ["Subserie Persona 4", 5.7, "P4, Golden, Arena, Ultimax, Dancing All Night"], ["Subserie Persona 3", 5.0, "P3, FES, Portable, Dancing in Moonlight, Reload"]];
+  const chartEl = document.getElementById("chart"), tip = document.getElementById("tip");
+  const titleEl = document.getElementById("chart-title"), legendEl = document.getElementById("legend");
+  document.querySelectorAll("[data-chart]").forEach(t => t.addEventListener("click", () => setChart(t.dataset.chart)));
+  function setChart(k) {
+    activeChart = k; blip(740);
+    document.querySelectorAll("[data-chart]").forEach(t => t.setAttribute("aria-selected", t.dataset.chart === k));
+    drawChart(k);
+  }
+  function drawChart(k) {
+    tip.textContent = "";
+    setHead("chart", null);
+    if (k === "rank") {
+      setHead("chart", { titulo: "Persona 5 Royal es el juego más vendido de la saga, con más del doble que el segundo",
+        meta: [["Qué mide", "copias vendidas de cada juego, sumando todas sus plataformas"], ["Unidad", "millones de copias"], ["Período", "última cifra disponible de cada juego (2016 a 2026)"], ["Fuente", "Atlus/Sega y VGChartz"]],
+        leer: "Cada barra es un juego: más larga, más copias vendidas. En blanco, la cifra oficial reciente, que incluye ventas digitales. En gris, la estimación de VGChartz, solo de copias físicas hasta 2016. En celeste, el juego destacado. Pasa el cursor por una barra para ver sus plataformas.",
+        signif: "Los cuatro más vendidos son juegos recientes o versiones ampliadas que se venden en varias plataformas y en digital. Los juegos antiguos aparecen más abajo en parte porque su cifra no cuenta las ventas digitales." });
+      titleEl.textContent = "Ranking de la saga: mejor cifra disponible por juego (millones)";
+      legendEl.innerHTML = `<span><i style="background:var(--paper)"></i>Oficial Atlus/Sega · físico + digital (mínimo)</span><span><i style="background:var(--ot)"></i>VGChartz · solo físico hasta 2016</span><span><i style="background:var(--foam)"></i>Destacado: el más vendido</span>`;
+      chartEl.innerHTML = RANK.map(([n, v, src, det], i) =>
+        `<div class="bar${i === 0 ? " hl" : ""}" tabindex="0" data-i="${i}"><span class="nm" title="${n} · ${det}">${n}</span><span class="track"><span class="fill" style="background:${i === 0 ? "var(--foam)" : src === "of" ? "var(--paper)" : "var(--ot)"}" data-w="${(v / 7.25 * 100).toFixed(2)}"></span></span><span class="val">${fmt(v)}</span></div>`).join("");
+      chartEl.querySelectorAll(".bar").forEach(b => {
+        const [n, v, src, det] = RANK[+b.dataset.i];
+        const say = () => { tip.textContent = `${n}: ${fmt(v)} M · ${det} · ${src === "of" ? "cifra oficial (mínimo)" : "estimación física VGChartz"}.`; };
+        b.addEventListener("mouseenter", say); b.addEventListener("focus", say);
+      });
+      chartEl.insertAdjacentHTML("beforeend", `<div class="xaxis"><span></span><div class="ticks">${[0, 1, 2, 3, 4, 5, 6, 7].map(t => `<span style="left:${(t / 7.25 * 100).toFixed(2)}%">${t}</span>`).join("")}</div><span></span><div class="ttl">Millones de copias vendidas en el mundo</div></div>`);
+      tip.textContent = "";
+      animateBars("#chart"); return;
+    }
+    if (k === "sub") {
+      titleEl.textContent = "Ventas por subserie a septiembre de 2026 (millones, físico + digital)";
+      setHead("chart", { titulo: "La subserie Persona 5 vende más que Persona 3 y Persona 4 juntas",
+        meta: [["Qué mide", "copias de cada subserie: el juego principal con sus versiones y spin-offs"], ["Unidad", "millones de copias (mínimos)"], ["Período", "acumulado a septiembre de 2026"], ["Fuente", "Sega Sammy"]],
+        leer: "Cada barra es una subserie, es decir, un juego principal con todas sus versiones y spin-offs. Más larga, más copias. Pasa el cursor por una barra para ver qué juegos incluye.",
+        signif: "Persona 5 (13 M+) supera a Persona 3 y Persona 4 juntas (10,7 M+). Las tres suman 23,7 M de los 30 M+ de la saga; el resto corresponde a otros juegos de la saga." });
+      legendEl.innerHTML = `<span class="muted">Incluye spin-offs · mínimos según Sega Sammy · saga completa: 30 M+</span>`;
+      chartEl.innerHTML = SUB.map(([n, v, det], i) =>
+        `<div class="bar${i === 0 ? " hl" : ""}"><span class="nm" title="${det}">${n}</span><span class="track"><span class="fill" style="${i === 0 ? "background:var(--foam)" : ""}" data-w="${(v / 13 * 100).toFixed(1)}"></span></span><span class="val">${v.toFixed(1).replace(".", ",")}</span></div>`).join("");
+      ejeX(chartEl, 13, [0, 5, 10], "Millones de copias vendidas (mínimos anunciados)");
+      tip.textContent = "";
+      animateBars("#chart"); return;
+    }
+    if (k === "ver") {
+      titleEl.textContent = "Original frente a su versión ampliada o rehecha (millones, mejor cifra disponible)";
+      setHead("chart", { titulo: "Las versiones ampliadas o rehechas venden entre 3 y 4,5 veces más que el juego original",
+        meta: [["Qué mide", "copias del juego original y de su versión ampliada o remake"], ["Unidad", "millones de copias"], ["Período", "última cifra disponible de cada juego"], ["Fuente", "Atlus/Sega y VGChartz"]],
+        leer: "Los juegos van en pares: arriba el original (gris) y abajo su versión ampliada o remake (blanco); Royal va en celeste por ser el más vendido. Compara el largo dentro de cada par.",
+        signif: "Royal vende 3,3 veces Persona 5, la comparación más justa porque ambas cifras son oficiales. Golden (3,0×) y Reload (4,5×) se comparan con originales que solo tienen copias físicas hasta 2016, así que esa diferencia está exagerada." });
+      legendEl.innerHTML = `<span><i style="background:var(--ot)"></i>Original</span><span><i style="background:var(--paper)"></i>Versión ampliada o rehecha</span><span><i style="background:var(--foam)"></i>Destacado: Royal, el más vendido</span>`;
+      const VER = [["Persona 3 · PS2", 0.66, 0, "VGChartz, solo físico"], ["Persona 3 Reload", 3.0, 1, "oficial, mínimo"], ["Persona 4 · PS2", 0.82, 0, "VGChartz, solo físico"],
+                   ["Persona 4 Golden", 2.5, 1, "oficial, Vita + PC"], ["Persona 5", 2.2, 0, "oficial 2018, mínimo"], ["Persona 5 Royal", 7.25, 1, "oficial 2025, mínimo"]];
+      chartEl.innerHTML = VER.map(([n, v, isV, src], i) =>
+        `<div class="bar${isV ? " hl" : ""}" style="${!isV && i ? "margin-top:10px" : ""}"><span class="nm" title="${src}">${n}</span><span class="track"><span class="fill" style="background:${n === "Persona 5 Royal" ? "var(--foam)" : isV ? "var(--paper)" : "var(--ot)"}" data-w="${(v / 7.25 * 100).toFixed(2)}"></span></span><span class="val">${fmt(v)}</span></div>`).join("");
+      ejeX(chartEl, 7.25, [0, 1, 2, 3, 4, 5, 6, 7], "Millones de copias vendidas en el mundo");
+      tip.textContent = "";
+    } else if (k === "ambos") {
+      titleEl.textContent = "Participación por plataforma, físico + digital (cada juego en una misma fecha)";
+      setHead("chart", { titulo: "Donde hay desglose, PlayStation sigue siendo la mayoría, pero el PC ya vende entre un tercio y la mitad",
+        meta: [["Qué mide", "parte de las copias de cada juego vendida en cada plataforma (físico + digital)"], ["Unidad", "% de las copias del juego"], ["Período", "una fecha por juego: mar 2021, nov 2022, 2025–26"], ["Fuente", "Atlus/Sega y estimaciones de Steam"]],
+        leer: "Cada barra es un juego y suma 100% de sus copias a esa fecha. Azul es PlayStation, rosado es PC, amarillo Nintendo y verde Xbox (los mismos colores en toda la web). El gris rayado agrupa plataformas que Sega informó juntas, así que no se puede separar. La columna de la derecha resume cuánto es PlayStation.",
+        signif: "PlayStation pasó de 88,1% (hasta 2016) a 62,5% en Golden y a 69,7% o más en Royal, porque el PC ganó espacio. En Reload Sega no separa las consolas, así que su % de PlayStation no se conoce; el PC se estima en 40–57%." });
+      drawAmbosPS(chartEl);
+      tip.textContent = "Nota: Golden suma 2,4 M porque usa la cifra de PC con la misma fecha (0,9 M); el ranking usa 1,0 M de PC sin fecha exacta y por eso muestra 2,5 M.";
+      return;
+    } else if (k === "formato") {
+      titleEl.textContent = "Formato de compra en un mismo trimestre: abril–junio 2026 (%)";
+      setHead("chart", { titulo: "En abril–junio de 2026, más de 8 de cada 10 juegos se compraron en formato digital",
+        meta: [["Qué mide", "parte de los juegos vendidos que fue descarga digital"], ["Unidad", "% de las copias vendidas"], ["Período", "abril–junio 2026 (mismo trimestre)"], ["Fuente", "Sony, Square Enix y Sega"]],
+        leer: "Cada barra suma 100% de las ventas de una empresa en ese trimestre: blanco es digital y gris es físico. La barra de Persona está vacía porque Sega no informa el formato.",
+        signif: "El mercado donde compite Persona ya es mayoritariamente digital: 82% en PlayStation y 90,1% en Square Enix. No es el porcentaje de Persona (que vendió 1,04 M ese trimestre), pero respalda priorizar el lanzamiento digital." });
+      drawFormato(chartEl);
+      chartEl.insertAdjacentHTML("beforeend", `<div class="pctaxis" style="grid-template-columns:minmax(0,9rem) minmax(0,1fr)"><span></span><div class="ticks">${[0, 25, 50, 75, 100].map(t => `<span style="left:${t}%">${t}%</span>`).join("")}</div><div class="ttl">% de las copias vendidas en el trimestre</div></div>`);
+      tip.textContent = "";
+      return;
+    } else if (k === "plat") {
+      titleEl.textContent = "Participación de las ventas físicas por plataforma, hasta 2016 (%)";
+      setHead("chart", { titulo: "Hasta 2016, casi 9 de cada 10 copias físicas de Persona se vendieron en PlayStation",
+        meta: [["Qué mide", "parte de las copias físicas vendidas en cada familia de consolas"], ["Unidad", "% del total de cada grupo"], ["Período", "juegos lanzados 1995–2016"], ["Fuente", "VGChartz (Kaggle)"]],
+        leer: "Cada barra suma 100% de las copias físicas de un grupo de juegos y se divide por plataforma. La columna de la derecha suma todo lo de PlayStation. Arriba Persona; abajo los otros 1.380 juegos de rol, para comparar.",
+        signif: "Persona dependía de PlayStation (88,1%) mucho más que el juego de rol típico (37,3%), donde pesa Nintendo por Pokémon. Hasta 2016 Persona no tenía versión de PC." });
+      drawPlatPS(chartEl);
+      tip.textContent = "";
+      return;
+    } else if (k === "nota") {
+      titleEl.textContent = "Juegos de rol: nota de la crítica frente a ventas globales";
+      setHead("chart", { titulo: "Los juegos de rol mejor evaluados por la crítica tienden a vender más",
+        meta: [["Qué mide", "nota de la crítica (eje horizontal) y copias vendidas (eje vertical) de cada juego de rol"], ["Unidad", "puntos de 0 a 100 y millones de copias físicas"], ["Período", "juegos lanzados 1995–2016"], ["Fuente", "VGChartz y Metacritic"]],
+        leer: "Cada punto es un juego: más a la derecha, mejor nota; más arriba, más copias. El eje vertical es logarítmico, cada línea vale 10 veces la anterior. Las rayas blancas marcan la venta típica (mediana) de cada tramo de nota.",
+        signif: "La relación es moderada (Spearman 0,44): a mejor nota, más ventas, pero con mucha dispersión. Los juegos con 90 o más venden una mediana de 1,44 M, 2,5 veces los de 80–89. Los Persona (celeste) están entre 76 y 93 puntos." });
+      legendEl.innerHTML = `<span><i style="background:var(--foam)"></i>Persona (13)</span><span><i style="background:var(--ot)"></i>Otros Megami Tensei (9)</span><span><i style="background:rgba(244,246,251,.4)"></i>Otros RPG (714)</span><span><i style="background:var(--paper);height:3px"></i>Mediana por tramo</span>`;
+      drawScatter(chartEl);
+      tip.textContent = "736 juegos con nota de la crítica. Pasa el cursor por un punto celeste para ver qué Persona es.";
+      return;
+    } else {
+      titleEl.textContent = "Mediana de ventas globales por grupo (millones)";
+      setHead("chart", { titulo: "Un Persona típico vende el doble que un juego de rol típico",
+        meta: [["Qué mide", "copias físicas que vende el juego del medio de cada grupo (mediana)"], ["Unidad", "millones de copias por juego"], ["Período", "juegos lanzados 1995–2016"], ["Fuente", "VGChartz (Kaggle)"]],
+        leer: "Cada barra es un grupo de juegos; su largo es la venta del juego típico (la mediana). n es la cantidad de juegos del grupo. Otros Megami Tensei es la saga de la que nace Persona.",
+        signif: "El Persona típico vendió 0,36 M de copias, el doble que el juego de rol típico (0,18 M) y más que el resto de su saga madre (0,26 M). Se usa la mediana porque unos pocos éxitos como Pokémon elevan el promedio." });
+      legendEl.innerHTML = `<span class="muted">Grupos de tamaño muy distinto: leer como tendencia</span>`;
+      chartEl.innerHTML = GRUPO.map(([n, v, c, nota], i) =>
+        `<div class="bar${i === 0 ? " hl" : ""}"><span class="nm">${n} <span class="muted">· n=${c}</span></span><span class="track"><span class="fill" style="${i === 0 ? "background:var(--foam)" : ""}" data-w="${(v / 0.36 * 100).toFixed(1)}"></span></span><span class="val">${fmt(v)}</span></div>`).join("");
+      chartEl.querySelectorAll(".bar").forEach(b => b.style.gridTemplateColumns = "minmax(0,19rem) minmax(0,1fr) 3.6rem");
+      chartEl.insertAdjacentHTML("beforeend", `<div class="xaxis" style="grid-template-columns:minmax(0,19rem) minmax(0,1fr) 3.6rem"><span></span><div class="ticks">${[0, 0.1, 0.2, 0.3].map(t => `<span style="left:${(t / 0.36 * 100).toFixed(2)}%">${String(t).replace(".", ",")}</span>`).join("")}</div><span></span><div class="ttl">Mediana de copias físicas por juego (millones)</div></div>`);
+      tip.textContent = "";
+    }
+    animateBars("#chart");
+  }
+  drawChart("rank");
+  try { if (localStorage.getItem("persona-proyector") === "1") setProyector(true); } catch (e) {}
+  try { if (localStorage.getItem("persona-explicaciones") === "0") setExplicaciones(false); } catch (e) {}
+
+  /* ======== OCÉANO ======== */
+  const cv = document.getElementById("sea"), g = cv.getContext("2d");
+  let W = 0, H = 0, bubbles = [], motes = [], shards = [], bgGrad = null, mouse = { x: .5, y: .5, tx: .5, ty: .5 }, surge = 0;
+  function kick() { surge = 1; }           // oleada al cambiar de pantalla
+  function size() {
+    const dpr = Math.min(devicePixelRatio || 1, 1.5); W = innerWidth; H = innerHeight;
+    cv.width = W * dpr; cv.height = H * dpr; g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    bgGrad = g.createLinearGradient(0, 0, 0, H);
+    bgGrad.addColorStop(0, "#0d5cc0"); bgGrad.addColorStop(.3, "#073a80"); bgGrad.addColorStop(.7, "#04214d"); bgGrad.addColorStop(1, "#010818");
+    bubbles = Array.from({ length: Math.round(W / 14) }, () => ({ x: Math.random() * W, y: Math.random() * H, r: 1.2 + Math.random() * 4.5, s: .5 + Math.random() * 1.6, p: Math.random() * 6 }));
+    motes = Array.from({ length: Math.round(W / 9) }, () => ({ x: Math.random() * W, y: Math.random() * H, z: .3 + Math.random() * .9, p: Math.random() * 6 }));
+    shards = Array.from({ length: 9 }, (_, i) => ({ x: Math.random() * W, y: Math.random() * H, s: 18 + Math.random() * 46, a: Math.random() * 6, va: (Math.random() - .5) * .01, vy: -.15 - Math.random() * .35, k: Math.random() }));
+  }
+  size(); addEventListener("resize", size);
+  addEventListener("pointermove", e => { mouse.tx = e.clientX / W; mouse.ty = e.clientY / H; });
+  let last = 0, running = false;
+  function frame(t) {
+    if (reduced) { running = false; return; }
+    running = true;
+    const T = t / 1000, dt = Math.min((t - last) / 16.7, 3) || 1; last = t;
+    mouse.x += (mouse.tx - mouse.x) * .05; mouse.y += (mouse.ty - mouse.y) * .05;
+    surge *= .97;
+    const px = (mouse.x - .5) * 40, py = (mouse.y - .5) * 24;
+    g.fillStyle = bgGrad; g.fillRect(0, 0, W, H);
+
+    // luna difusa vista desde bajo el agua
+    const mx = W * .76 - px * .6, my = H * .1 - py * .4;
+    const pul = 1 + Math.sin(T * 1.3) * .06;
+    const glow = g.createRadialGradient(mx, my, 0, mx, my, Math.max(W, H) * .42 * pul);
+    glow.addColorStop(0, "rgba(210,245,255,.75)"); glow.addColorStop(.12, "rgba(140,225,255,.35)"); glow.addColorStop(.45, "rgba(60,170,255,.10)"); glow.addColorStop(1, "rgba(60,170,255,0)");
+    g.fillStyle = glow; g.fillRect(0, 0, W, H);
+
+    g.save(); g.globalCompositeOperation = "lighter";
+    // rayos de luz que se balancean
+    for (let i = 0; i < 9; i++) {
+      const sw = Math.sin(T * .55 + i * 1.3);
+      const x0 = mx + (i - 4) * W * .055 + sw * 50;
+      const w = 14 + 10 * Math.sin(T * .8 + i * 2.1);
+      const a = .07 + .06 * (0.5 + 0.5 * Math.sin(T * 1.1 + i * 1.7));
+      const lg = g.createLinearGradient(0, 0, 0, H * .95);
+      lg.addColorStop(0, `rgba(170,235,255,${a})`); lg.addColorStop(1, "rgba(170,235,255,0)");
+      g.fillStyle = lg; g.beginPath();
+      g.moveTo(x0 - w, -10); g.lineTo(x0 + w, -10);
+      g.lineTo(x0 - W * .32 + sw * 120 + w * 6, H); g.lineTo(x0 - W * .32 + sw * 120 - w * 6, H); g.closePath(); g.fill();
+    }
+    // superficie ondulada (destellos arriba)
+    g.lineWidth = 2;
+    for (let k = 0; k < 6; k++) {
+      g.strokeStyle = `rgba(200,245,255,${.22 - k * .03})`; g.beginPath();
+      for (let x = -20; x <= W + 20; x += 14) {
+        const y = 18 + k * 16 + Math.sin(x * .012 + T * 2.2 + k) * (6 + k) + Math.sin(x * .031 - T * 3.1) * 3;
+        x < 0 ? g.moveTo(x, y) : g.lineTo(x, y);
+      }
+      g.stroke();
+    }
+    // cáusticas: red de líneas brillantes que se deforma
+    g.lineWidth = 1.4;
+    for (let k = 0; k < 16; k++) {
+      const base = (k / 16) * H * 1.1 - H * .05;
+      g.strokeStyle = `rgba(150,225,255,${.05 + .05 * Math.sin(T * 1.7 + k)})`; g.beginPath();
+      for (let x = -20; x <= W + 20; x += 18) {
+        const y = base + Math.sin(x * .009 + T * 1.4 + k * .9) * 22 + Math.sin(x * .021 - T * 1.9 + k) * 10 + py * .5;
+        x < 0 ? g.moveTo(x + px, y) : g.lineTo(x + px, y);
+      }
+      g.stroke();
+      g.beginPath();
+      const bx = (k / 16) * W * 1.1 - W * .05;
+      for (let y = -20; y <= H + 20; y += 18) {
+        const x = bx + Math.sin(y * .01 - T * 1.2 + k * 1.3) * 24 + Math.sin(y * .024 + T * 2.1) * 9 + px * .5;
+        y < 0 ? g.moveTo(x, y) : g.lineTo(x, y);
+      }
+      g.stroke();
+    }
+    g.restore();
+
+    // fragmentos de cristal que flotan y giran
+    shards.forEach(sh => {
+      sh.y += sh.vy * dt * (1 + surge * 6); sh.a += sh.va * dt * (1 + surge * 8);
+      if (sh.y < -80) { sh.y = H + 80; sh.x = Math.random() * W; }
+      const x = sh.x + Math.sin(T * .6 + sh.k * 9) * 30 - px * (.6 + sh.k), y = sh.y - py * (.6 + sh.k);
+      g.save(); g.translate(x, y); g.rotate(sh.a); g.scale(1, .55 + .45 * Math.sin(T * 1.4 + sh.k * 7));
+      g.beginPath(); g.moveTo(0, -sh.s); g.lineTo(sh.s * .45, sh.s * .2); g.lineTo(-sh.s * .25, sh.s * .7); g.lineTo(-sh.s * .5, 0); g.closePath();
+      g.fillStyle = `rgba(120,215,255,${.10 + .08 * sh.k})`; g.fill();
+      g.strokeStyle = `rgba(220,248,255,${.35 + .2 * Math.sin(T * 2 + sh.k * 5)})`; g.lineWidth = 1.2; g.stroke();
+      g.restore();
+    });
+
+    // capas de oleaje con paralaje
+    const layers = [[.30, 28, .005, .9, "rgba(95,211,255,.13)", .2], [.46, 36, .0038, .7, "rgba(10,98,201,.30)", .45], [.62, 44, .003, .55, "rgba(6,48,107,.50)", .7], [.80, 52, .0024, .4, "rgba(1,10,30,.70)", 1]];
+    layers.forEach(([y, amp, k, sp, col, depth], li) => {
+      const A = amp * (1 + surge * 1.4);
+      g.fillStyle = col; g.beginPath(); g.moveTo(0, H);
+      for (let x = -20; x <= W + 20; x += 16) {
+        const yy = H * y + py * depth + Math.sin(x * k + T * sp * 2 + li) * A + Math.sin(x * k * 2.3 - T * sp * 1.6) * A * .45 + Math.sin(x * k * .5 + T * sp) * A * .6;
+        g.lineTo(x - px * depth, yy);
+      }
+      g.lineTo(W, H); g.closePath(); g.fill();
+    });
+
+    // partículas en suspensión
+    motes.forEach(m => {
+      m.y -= .12 * m.z * dt; m.x += Math.sin(T * .7 + m.p) * .15 * dt;
+      if (m.y < -4) { m.y = H + 4; m.x = Math.random() * W; }
+      g.fillStyle = `rgba(190,235,255,${.18 + .3 * m.z * (0.5 + 0.5 * Math.sin(T * 2 + m.p))})`;
+      g.fillRect(m.x - px * m.z, m.y - py * m.z, 1.6 * m.z + .4, 1.6 * m.z + .4);
+    });
+    // burbujas que suben y brillan
+    bubbles.forEach(b => {
+      b.y -= b.s * dt * (1 + surge * 5); if (b.y < -12) { b.y = H + 12; b.x = Math.random() * W; }
+      const x = b.x + Math.sin(T * 2 + b.p) * 8 - px * .8, y = b.y - py * .8;
+      g.strokeStyle = "rgba(210,245,255,.6)"; g.lineWidth = 1.1;
+      g.beginPath(); g.arc(x, y, b.r, 0, Math.PI * 2); g.stroke();
+      g.fillStyle = "rgba(255,255,255,.55)"; g.beginPath(); g.arc(x - b.r * .35, y - b.r * .35, b.r * .28, 0, Math.PI * 2); g.fill();
+    });
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+
+<aside id="music" aria-label="Música de fondo">
+  <div class="card" title="Vía YouTube · Persona 3 Reload OST">
+    <div id="yt-wrap"><div id="yt"></div></div>
+    <div class="info">
+      <div class="now"><span class="eq" aria-hidden="true"><i></i><i></i><i></i></span><span><span class="n" id="m-n">1/4</span> <b id="m-t">Full Moon Full Life</b></span></div>
+      <div class="row">
+        <button id="m-prev" class="sk" aria-label="Tema anterior" title="Tema anterior">⏮</button>
+        <button id="m-play" aria-pressed="false">Play</button>
+        <button id="m-next" class="sk" aria-label="Tema siguiente" title="Tema siguiente">⏭</button>
+        <input id="vol" type="range" min="0" max="100" value="45" aria-label="Volumen">
+        <button id="m-min" aria-label="Achicar reproductor">–</button>
+      </div>
+    </div>
+  </div>
+  <p class="msg" id="m-msg">Suena al primer clic o tecla</p>
+</aside>
+
+<script>
+(() => {
+  const TRACKS = [{"id": "hWhgrA2dhrk", "t": "Full Moon Full Life"}, {"id": "j9Sn1nFGQQ8", "t": "Color Your Night"}, {"id": "4WRwg_-Q5Ls", "t": "It's Going Down Now"}, {"id": "imZD-GZ6f0U", "t": "Memories of You -Reload-"}];
+  let idx = 0;
+  const tEl = document.getElementById("m-t"), nEl = document.getElementById("m-n");
+  const link = i => '<a href="https://www.youtube.com/watch?v=' + TRACKS[i].id + '" target="_blank" rel="noopener">Abrir en YouTube</a>';
+  function label() { tEl.textContent = TRACKS[idx].t; tEl.title = TRACKS[idx].t; nEl.textContent = (idx + 1) + "/" + TRACKS.length; }
+  const box = document.getElementById("music"), btn = document.getElementById("m-play"),
+        vol = document.getElementById("vol"), msg = document.getElementById("m-msg"), min = document.getElementById("m-min");
+  let player = null, ready = false, wantPlay = false, blocked = false, fallos = 0;
+
+  // API oficial de YouTube
+  const tag = document.createElement("script");
+  tag.src = "https://www.youtube.com/iframe_api";
+  document.head.appendChild(tag);
+  window.onYouTubeIframeAPIReady = () => {
+    player = new YT.Player("yt", {
+      width: 80, height: 45, videoId: TRACKS[0].id,
+      playerVars: { controls: 1, modestbranding: 1, rel: 0, playsinline: 1 },
+      events: {
+        onReady: () => { ready = true; player.setVolume(+vol.value); if (wantPlay) play(); },
+        onStateChange: e => {
+          const on = e.data === YT.PlayerState.PLAYING;
+          box.classList.toggle("playing", on);
+          btn.textContent = on ? "Pausa" : "Play"; btn.setAttribute("aria-pressed", on);
+          if (on) { msg.hidden = true; fallos = 0; }
+          if (e.data === YT.PlayerState.ENDED) go(1, true);   // al terminar pasa al siguiente (y vuelve al inicio)
+        },
+        onError: e => {
+          msg.hidden = false;
+          const causa = (e.data === 101 || e.data === 150) ? "no se permite fuera de YouTube" : "no se pudo cargar";
+          msg.innerHTML = "«" + TRACKS[idx].t + "» " + causa + ". " + link(idx) + ".";
+          // si un tema está bloqueado se salta al siguiente; si fallan todos, se detiene
+          if (++fallos < TRACKS.length) setTimeout(() => go(1, wantPlay), 1200); else blocked = true;
+        },
+      },
+    });
+  };
+  function play() { if (blocked) return; wantPlay = true; if (ready) { player.unMute(); player.setVolume(+vol.value); player.playVideo(); } }
+  function go(d, sonar) {
+    idx = (idx + d + TRACKS.length) % TRACKS.length; label();
+    if (!ready) return;
+    if (sonar) { blocked = false; player.loadVideoById(TRACKS[idx].id); } else player.cueVideoById(TRACKS[idx].id);
+  }
+  const playing = () => ready && player.getPlayerState() === YT.PlayerState.PLAYING;
+  document.getElementById("m-prev").addEventListener("click", e => { e.stopPropagation(); fallos = 0; go(-1, playing() || wantPlay); });
+  document.getElementById("m-next").addEventListener("click", e => { e.stopPropagation(); fallos = 0; go(1, playing() || wantPlay); });
+  function pause() { wantPlay = false; if (ready) player.pauseVideo(); }
+
+  btn.addEventListener("click", e => {
+    e.stopPropagation();
+    if (playing()) pause(); else play();
+  });
+  box.addEventListener("keydown", e => e.stopPropagation());   // las flechas del volumen no mueven el menú
+  vol.addEventListener("input", () => { if (ready) player.setVolume(+vol.value); });
+  min.addEventListener("click", e => { e.stopPropagation(); box.classList.toggle("min"); min.textContent = box.classList.contains("min") ? "+" : "–"; });
+
+  setTimeout(() => { if (!blocked) msg.hidden = true; }, 6000);
+  // Los navegadores bloquean el sonido automático: se inicia con la primera interacción.
+  const first = e => {
+    if (box.contains(e.target)) return;
+    removeEventListener("pointerdown", first, true); removeEventListener("keydown", first, true);
+    play();
+  };
+  addEventListener("pointerdown", first, true);
+  addEventListener("keydown", first, true);
+})();
+</script>
+
+</body>
+</html>
