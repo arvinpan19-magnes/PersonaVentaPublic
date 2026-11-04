@@ -926,7 +926,7 @@ body.still .fill,body.still .seg{transition:none;}
       e.preventDefault();
     }
     else if (current === "stats" && (key === "ArrowRight" || key === "ArrowLeft")) {
-      const order = ["rank", "sub", "grupo", "plat", "ambos", "formato", "ver", "nota"]; const k = order.indexOf(activeChart);
+      const order = [...document.querySelectorAll("#screen-stats [data-chart]")].map(b => b.dataset.chart); const k = order.indexOf(activeChart);
       setChart(order[(k + (key === "ArrowRight" ? 1 : order.length - 1)) % order.length]); e.preventDefault();
     }
   });
